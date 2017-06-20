@@ -50,7 +50,7 @@ Usage:
 
 ```
 cd bin/
-./BayesianCollaborativeDenoiser <arguments list>
+./bcd_cli <arguments list>
 ```
 
 Required arguments list:
