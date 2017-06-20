@@ -1,0 +1,7 @@
+build*
+*.tmp
+*~
+!.gitignore
+!src
+!bin
+!data
