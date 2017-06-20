@@ -1,4 +1,4 @@
-# README #
+	# README #
 
 Reference implementation for the paper "Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering" by Malik Boughida and Tamy Boubekeur.
@@ -13,7 +13,7 @@ All rights reserved.
 
 You can refer to the project page for more information: http://www.telecom-paristech.fr/~boubek/papers/BCD/
 
-### Building###
+### Building ###
 
 This program uses CMake. It has been tested on Linux. It should work on Windows too, but building on MacOSX could require more efforts.
 
