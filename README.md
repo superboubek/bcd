@@ -41,8 +41,10 @@ Use the following cmake option to compile without CUDA support (multi-core CPU e
 ### Execution ###
 
 Usage:
+...
 cd bin/
 ./BayesianCollaborativeDenoiser <arguments list>
+...
 
 Required arguments list:
 
@@ -81,8 +83,8 @@ Usage: raw2bcd <input> <outputPrefix>.
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
 
 Required arguments list:
-    <input>           The file path to the input image,
-    <outputPrefix>    The file path to the output image, without .exr extension.
+* <input>           The file path to the input image,
+* <outputPrefix>    The file path to the output image, without .exr extension.
 
 RAW sample images follow the following header structure:
 <pre><code>typedef struct {
