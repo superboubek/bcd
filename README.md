@@ -29,23 +29,28 @@ Optional:
 * CUDA
 
 To build on Linux, go to the directory containing this README file, then:
+
+```
 mkdir build
 cd build
 cmake ../src
 make
+```
 
 You can also use the graphical user interface for cmake (cmake-gui). 
 Use the following cmake option to compile without CUDA support (multi-core CPU execution only then): 
+```
 -DBCD_USE_CUDA=OFF
+```
 
 ### Execution ###
 
 Usage:
-...
+
+```
 cd bin/
 ./BayesianCollaborativeDenoiser <arguments list>
-...
-
+```
 Required arguments list:
 
 * -o <output>          The file path to the output image
@@ -68,7 +73,7 @@ Optional arguments list:
 * -e <float>           Minimum eigen value for matrix inversion (default: 1e-08)
 
 Example: 
-./BayesianCollaborativeDenoiser -o sponza-dir_256spp_BCDfiltered.exr -i sponza-dir_256spp.exr -h sponza-dir_256spp_hist.exr -c sponza-dir_256spp_cov.exr
+./BayesianCollaborativeDenoiser -o filtered-image.exr -i noisy-image.exr -h noisy-image_hist.exr -c noisy-image_cov.exr
 
 Precompiled MS Windows binaries are provided in the bin/win64 directory.
 
@@ -78,7 +83,10 @@ Only EXR images are supported.
 
 The raw2bcd command line tool allows to convert raw binary many-samples per pixel (i.e. all the samples that get average to the final pixel color, before averaging them) files to the 3 EXR files required by BCD (per-pixel color, distribution/histogram, covariance matrix).
 
-Usage: raw2bcd <input> <outputPrefix>.
+Usage: 
+```
+raw2bcd <input> <outputPrefix>.
+```
 
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
 
@@ -99,4 +107,4 @@ RAW sample images follow the following header structure:
 
 Depending on num_channels value you might get RGB (3) or RGBA (4) values.
 
-The input file "test.raw" is provided as an example in the data/full_sampling_raw_input directory.
+The input file "test.raw" is provided as an example in the data/raw directory.
