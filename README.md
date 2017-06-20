@@ -77,7 +77,9 @@ Only EXR images are supported.
 The raw2bcd command line tool allows to convert raw binary many-samples per pixel (i.e. all the samples that get average to the final pixel color, before averaging them) files to the 3 EXR files required by BCD (per-pixel color, distribution/histogram, covariance matrix).
 
 Usage: raw2bcd <input> <outputPrefix>.
+
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
+
 Required arguments list:
     <input>           The file path to the input image,
     <outputPrefix>    The file path to the output image, without .exr extension.
