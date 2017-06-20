@@ -110,7 +110,7 @@ The input file "test.raw" is provided as an example in the data/raw directory.
 
 ## Authors
 
-* **Malik Boughida** 
+* [**Malik Boughida**](https://www.telecom-paristech.fr/~boughida/) 
 * [**Tamy Boubekeur**](https://www.telecom-paristech.fr/~boubek)
 
 See also the list of [contributors](https://github.com/superboubek/bcd/contributors) who participated in this project.
