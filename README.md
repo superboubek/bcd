@@ -1,4 +1,4 @@
-	# README #
+# README #
 
 Reference implementation for the paper "Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering" by Malik Boughida and Tamy Boubekeur.
