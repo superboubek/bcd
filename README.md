@@ -3,9 +3,6 @@
 Reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
 
-Please cite the following paper in case you are using this code:
->**Bayesian Collaborative Denoising for Monte-Carlo Rendering.** *Malik Boughida and Tamy Boubekeur.* Computer Graphics Forum (Proc. EGSR 2017), vol. 36, no. 4, p. 137-153, 2017.
-
 Copyright(C) 2014-2017
 Malik Boughida and Tamy Boubekeur
                                                                            
@@ -87,14 +84,14 @@ The **raw2bcd** command line tool allows to convert raw binary many-samples per 
 
 Usage: 
 ```
-raw2bcd <raw-input-file> <outputPrefix>
+raw2bcd <raw-input-file> <output-prefix>
 ```
 
-Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
+Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (bcd_cli) program.
 
 Required arguments list:
 * _raw-input-file_,  the file path to the input binary raw sample setr file,
-* _outputPrefix_, the file path to the output image, without .exr extension.
+* _output-prefix_, the file path to the output image, without .exr extension.
 
 RAW sample images follow the following header structure:
 <pre><code>typedef struct {
@@ -118,6 +115,11 @@ The input file "test.raw" is provided as an example in the data/raw directory.
 
 See also the list of [contributors](https://github.com/superboubek/bcd/contributors) who participated in this project.
 
+## Citation
+
+Please cite the following paper in case you are using this code:
+>**Bayesian Collaborative Denoising for Monte-Carlo Rendering.** *Malik Boughida and Tamy Boubekeur.* Computer Graphics Forum (Proc. EGSR 2017), vol. 36, no. 4, p. 137-153, 2017.
+
 ## License
 
-This project is licensed under the BSD-like License - see the [LICENSE.txt](LICENSE.txt) file for details.
+This project is licensed under a BSD-like license - see the [LICENSE.txt](LICENSE.txt) file for details.
