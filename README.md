@@ -3,7 +3,7 @@
 Reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
 
-This program allows to denoise images rendering with Monte Carlo path tracing and provided in the form of their statistics (average, distribution and covariance of per-pixel color samples).
+This program allows to denoise images rendered with Monte Carlo path tracing and provided in the form of their statistics (average, distribution and covariance of per-pixel color samples).
 
 Copyright(C) 2014-2017
 Malik Boughida and Tamy Boubekeur
