@@ -74,7 +74,7 @@ Optional arguments list:
 
 Example: 
 ```
-./bcd_cli -o filtered-image.exr -i noisy-image.exr -h noisy-image_hist.exr -c noisy-image_cov.exr
+./bcd_cli -o filtered-rendering.exr -i noisy-rendering.exr -h noisy-rendering_hist.exr -c noisy-rendering_cov.exr
 ```
 
 Precompiled MS Windows binaries are provided in the bin/win64 directory.
@@ -87,14 +87,14 @@ The **raw2bcd** command line tool allows to convert raw binary many-samples per 
 
 Usage: 
 ```
-raw2bcd <input> <outputPrefix>
+raw2bcd <raw-input-file> <outputPrefix>
 ```
 
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
 
 Required arguments list:
-* <input>           The file path to the input image,
-* <outputPrefix>    The file path to the output image, without .exr extension.
+* _raw-input-file_,  the file path to the input binary raw sample setr file,
+* _outputPrefix_, the file path to the output image, without .exr extension.
 
 RAW sample images follow the following header structure:
 <pre><code>typedef struct {
