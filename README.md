@@ -11,9 +11,7 @@ Malik Boughida and Tamy Boubekeur
                                                                            
 All rights reserved. 
 
-You can refer to the project page for more information: http://www.telecom-paristech.fr/~boubek/papers/BCD/
-
-### Building ###
+## Building ##
 
 This program uses CMake. It has been tested on Linux. It should work on Windows too, but building on MacOSX could require more efforts.
 
@@ -44,7 +42,7 @@ Use the following cmake option to compile without CUDA support (multi-core CPU e
 -DBCD_USE_CUDA=OFF
 ```
 
-### Execution ###
+## Running ##
 
 Usage:
 
@@ -83,13 +81,13 @@ Precompiled MS Windows binaries are provided in the bin/win64 directory.
 
 Only EXR images are supported.
 
-### Conversion from raw full sampling images to proper inputs ###
+## Conversion from raw full sampling images to proper inputs ##
 
-The raw2bcd command line tool allows to convert raw binary many-samples per pixel (i.e. all the samples that get average to the final pixel color, before averaging them) files to the 3 EXR files required by BCD (per-pixel color, distribution/histogram, covariance matrix).
+The **raw2bcd** command line tool allows to convert raw binary many-samples per pixel (i.e. all the samples that get average to the final pixel color, before averaging them) files to the 3 EXR files required by BCD (per-pixel color, distribution/histogram, covariance matrix).
 
 Usage: 
 ```
-raw2bcd <input> <outputPrefix>.
+raw2bcd <input> <outputPrefix>
 ```
 
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (BCD) program.
@@ -112,3 +110,14 @@ RAW sample images follow the following header structure:
 Depending on num_channels value you might get RGB (3) or RGBA (4) values.
 
 The input file "test.raw" is provided as an example in the data/raw directory.
+
+## Authors
+
+* **Malik Boughida** 
+* [**Tamy Boubekeur**](https://www.telecom-paristech.fr/~boubek)
+
+See also the list of [contributors](https://github.com/superboubek/bcd/contributors) who participated in this project.
+
+## License
+
+This project is licensed under the BSD-like License - see the [LICENSE.txt](LICENSE.txt) file for details.
