@@ -1,4 +1,4 @@
-# README #
+# BCD - Bayesian Collaborative Denoiser for Monte-Carlo Rendering #
 
 Reference implementation for the paper "Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering" by Malik Boughida and Tamy Boubekeur.
