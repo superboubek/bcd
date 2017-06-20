@@ -3,6 +3,8 @@
 Reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
 
+This program allows to denoise images rendering with Monte Carlo path tracing and provided in the form of their statistics (average, distribution and covariance of per-pixel color samples).
+
 Copyright(C) 2014-2017
 Malik Boughida and Tamy Boubekeur
                                                                            
@@ -27,10 +29,10 @@ Optional:
 To build on Linux, go to the directory containing this README file, then:
 
 ```
-mkdir build
-cd build
-cmake ../src
-make
+$ mkdir build
+$ cd build
+$ cmake ../src
+$ make
 ```
 
 You can also use the graphical user interface for cmake (cmake-gui). 
@@ -44,8 +46,8 @@ Use the following cmake option to compile without CUDA support (multi-core CPU e
 Usage:
 
 ```
-cd bin/
-./bcd_cli <arguments list>
+$ cd bin/
+$ ./bcd_cli <arguments list>
 ```
 
 Required arguments list:
@@ -71,7 +73,7 @@ Optional arguments list:
 
 Example: 
 ```
-./bcd_cli -o filtered-rendering.exr -i noisy-rendering.exr -h noisy-rendering_hist.exr -c noisy-rendering_cov.exr
+$ ./bcd_cli -o filtered-rendering.exr -i noisy-rendering.exr -h noisy-rendering_hist.exr -c noisy-rendering_cov.exr
 ```
 
 Precompiled MS Windows binaries are provided in the bin/win64 directory.
@@ -84,7 +86,7 @@ The **raw2bcd** command line tool allows to convert raw binary many-samples per 
 
 Usage: 
 ```
-raw2bcd <raw-input-file> <output-prefix>
+$ raw2bcd <raw-input-file> <output-prefix>
 ```
 
 Converts a raw file with all samples into the inputs for the Bayesian Collaborative Denoiser (bcd_cli) program.
