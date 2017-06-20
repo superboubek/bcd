@@ -18,6 +18,7 @@ You can refer to the project page for more information: http://www.telecom-paris
 This program uses CMake. It has been tested on Linux. It should work on Windows too, but building on MacOSX could require more efforts.
 
 This program has several dependencies that need to be installed first:
+
 Required:
 
 * OpenEXR
@@ -51,6 +52,7 @@ Usage:
 cd bin/
 ./BayesianCollaborativeDenoiser <arguments list>
 ```
+
 Required arguments list:
 
 * -o <output>          The file path to the output image
@@ -73,7 +75,9 @@ Optional arguments list:
 * -e <float>           Minimum eigen value for matrix inversion (default: 1e-08)
 
 Example: 
-./BayesianCollaborativeDenoiser -o filtered-image.exr -i noisy-image.exr -h noisy-image_hist.exr -c noisy-image_cov.exr
+```
+./bcd_cli -o filtered-image.exr -i noisy-image.exr -h noisy-image_hist.exr -c noisy-image_cov.exr
+```
 
 Precompiled MS Windows binaries are provided in the bin/win64 directory.
 
