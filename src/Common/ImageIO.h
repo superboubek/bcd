@@ -11,24 +11,29 @@
 
 #include <vector>
 
-template<typename T> class DeepImage;
-
-/// @brief Class used as an interface for loading .exr files as DeepImage
-class ImageIO
+namespace bcd
 {
-private:
-	ImageIO() {}
 
-public:
-	static bool loadEXR(DeepImage<float>& o_rImage, const char* i_pFilePath);
-	static bool loadMultiChannelsEXR(DeepImage<float>& o_rImage, const char* i_pFilePath);
+	template<typename T> class DeepImage;
 
-	/// @brief Writes a .exr image with 1 or 3 channels (if 1, converted to 3)
-	static bool writeEXR(const DeepImage<float>& i_rImage, const char* i_pFilePath);
-	static bool writeMultiChannelsEXR(const DeepImage<float>& i_rImage, const char* i_pFilePath);
+	/// @brief Class used as an interface for loading .exr files as DeepImage
+	class ImageIO
+	{
+	private:
+		ImageIO() {}
 
-private:
-	static void reorderDataForWritingEXR(std::vector<float>& o_rData, const DeepImage<float>& i_rImage);
-};
+	public:
+		static bool loadEXR(DeepImage<float>& o_rImage, const char* i_pFilePath);
+		static bool loadMultiChannelsEXR(DeepImage<float>& o_rImage, const char* i_pFilePath);
+
+		/// @brief Writes a .exr image with 1 or 3 channels (if 1, converted to 3)
+		static bool writeEXR(const DeepImage<float>& i_rImage, const char* i_pFilePath);
+		static bool writeMultiChannelsEXR(const DeepImage<float>& i_rImage, const char* i_pFilePath);
+
+	private:
+		static void reorderDataForWritingEXR(std::vector<float>& o_rData, const DeepImage<float>& i_rImage);
+	};
+
+}
 
 #endif // IMAGE_IO_H

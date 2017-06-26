@@ -15,29 +15,31 @@
 
 #include <iostream>
 
-
-/// @brief Class to implement a cross-platform chronometer
-///
-/// Warning : uses C++11
-class Chronometer
+namespace bcd
 {
 
-public:
-	Chronometer();
+	/// @brief Class to implement a cross-platform chronometer
+	///
+	/// Warning : uses C++11
+	class Chronometer
+	{
 
-	void reset();
-	void start();
-	void stop();
-	float getElapsedTime(); ///< Returns elapsed time in seconds
-	static std::string getStringFromTime(float i_timeInSeconds);
-	void printElapsedTime(std::ostream& o_stream = std::cout);
+	public:
+		Chronometer();
 
-private:
-	bool m_isRunning;
-	float m_elapsedTime;
-	std::chrono::high_resolution_clock::time_point m_startTime;
-};
+		void reset();
+		void start();
+		void stop();
+		float getElapsedTime(); ///< Returns elapsed time in seconds
+		static std::string getStringFromTime(float i_timeInSeconds);
+		void printElapsedTime(std::ostream& o_stream = std::cout);
 
+	private:
+		bool m_isRunning;
+		float m_elapsedTime;
+		std::chrono::high_resolution_clock::time_point m_startTime;
+	};
 
+} // namespace bcd
 
 #endif // CHRONOMETER_H
