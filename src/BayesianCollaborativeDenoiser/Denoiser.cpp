@@ -10,6 +10,7 @@
 
 #ifdef FOUND_CUDA
 #include "CudaHistogramDistance.h"
+#include "cuda_runtime.h"
 #endif
 
 #include <iostream>
@@ -148,6 +149,7 @@ namespace bcd
 		computePixelCovFromSampleCov();
 
 #ifdef FOUND_CUDA
+
 		if(m_parameters.m_useCuda)
 			cout << "Parallelizing computations using Cuda" << endl;
 		else
@@ -248,12 +250,57 @@ namespace bcd
 		return true;
 	}
 
+	void printCudaDevicesProperties()
+	{
+#ifdef FOUND_CUDA
+		int nbOfDevices;
+		cudaError_t error = cudaGetDeviceCount(&nbOfDevices);
+		if(error != cudaSuccess)
+		{
+			cout << cudaGetErrorString(error) << endl;
+			return;
+		}
+		for(int deviceIndex = 0; deviceIndex < nbOfDevices; deviceIndex++)
+		{
+			cudaDeviceProp properties;
+			cudaGetDeviceProperties(&properties, deviceIndex);
+			cout << "Device Number: " << deviceIndex << endl;
+			cout << "  Device name: " << properties.name << endl;
+			cout << "  Memory Clock Rate (KHz): " << properties.memoryClockRate << endl;
+			cout << "  Memory Bus Width (bits): " << properties.memoryBusWidth << endl;
+			cout << "  Peak Memory Bandwidth (GB/s): "
+					<< 2.0*properties.memoryClockRate*(properties.memoryBusWidth/8)/1.0e6 << endl << endl;
+		}
+#endif
+	}
+
 	bool Denoiser::inputsOutputsAreOk()
 	{
-		if(m_parameters.m_patchRadius != 1 && m_parameters.m_useCuda)
+//		printCudaDevicesProperties();
+		if(m_parameters.m_useCuda)
 		{
-			m_parameters.m_useCuda = false;
-			cout << "Warning: disabling Cuda, that cannot be used for patch radius " << m_parameters.m_patchRadius << " > 1" << endl;
+			if(m_parameters.m_patchRadius != 1)
+			{
+				m_parameters.m_useCuda = false;
+				cout << "Warning: disabling Cuda, that cannot be used for patch radius " << m_parameters.m_patchRadius << " > 1" << endl;
+			}
+#ifdef FOUND_CUDA
+			{
+				int nbOfDevices;
+				cudaError_t error = cudaGetDeviceCount(&nbOfDevices);
+				if(error != cudaSuccess)
+				{
+					m_parameters.m_useCuda = false;
+					cout << "Warning: disabling Cuda, because the following error was encountered: ";
+					cout << cudaGetErrorString(error) << endl;
+				}
+				else if(nbOfDevices == 0)
+				{
+					m_parameters.m_useCuda = false;
+					cout << "Warning: disabling Cuda, because no CUDA-compatible GPU was found" << endl;
+				}
+			}
+#endif
 		}
 		return true;
 	}
