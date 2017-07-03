@@ -78,7 +78,7 @@ $ ./bcd_cli -o filtered-rendering.exr -i noisy-rendering.exr -h noisy-rendering_
 
 Precompiled MS Windows binaries are provided in the bin/win64 directory.
 
-Only EXR images are supported. A collection of input data is provided on the [project webpage](https://www.telecom-paristech.fr/~boubek/papers/BCD).
+Only EXR images are supported. A collection of input data files is provided on the [project webpage](https://www.telecom-paristech.fr/~boubek/papers/BCD).
 
 ## Conversion from raw full sampling images to proper inputs ##
 
