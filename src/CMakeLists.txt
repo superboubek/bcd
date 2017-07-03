@@ -10,6 +10,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.8)
 
 PROJECT(BayesianCollaborativeDenoising)
 
+OPTION(BCD_BUILD_GUI "Build a GUI executable for bcd, using library NanoGUI" ON)
 OPTION(BCD_USE_CUDA "Use CUDA for accelerating computations" ON)
 
 #C++11
@@ -92,6 +93,13 @@ SET(bcd_library "")
 ADD_SUBDIRECTORY(${bcd_folder_name})
 ADD_SUBDIRECTORY(bcd_cli)
 ADD_SUBDIRECTORY(Raw2BcdInputs)
+
+IF(BCD_BUILD_GUI)
+	ADD_SUBDIRECTORY(ext/nanogui)
+	ADD_SUBDIRECTORY(bcd_nanogui)
+ELSE(BCD_BUILD_GUI)
+	MESSAGE(STATUS "skipping building of GUI executable")
+ENDIF(BCD_BUILD_GUI)
 
 #INCLUDE(CPack)
 

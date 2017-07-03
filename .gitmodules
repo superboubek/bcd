@@ -1,0 +1,3 @@
+[submodule "src/ext/nanogui"]
+	path = src/ext/nanogui
+	url = https://github.com/wjakob/nanogui
