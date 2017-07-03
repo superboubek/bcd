@@ -11,31 +11,37 @@
 
 #include <vector>
 
-template<typename T> class DeepImage;
-
-class SpikeRemovalFilter
+namespace bcd
 {
-public:
-	static void filter(DeepImage<float>& io_rInputColorImage,
-			DeepImage<float>& io_rInputNbOfSamplesImage,
-			DeepImage<float>& io_rInputHistogramImage,
-			DeepImage<float>& io_rInputCovImage,
-			float i_thresholdStDevFactor = 2.f);
 
-private:
-	static void computeAverageAndStandardDeviation(
-			float& o_rAverage,
-			float& o_rStandardDeviation,
-			const std::vector<float>& i_rData);
+	template<typename T> class DeepImage;
 
-	/// @brief Simple and expensive (quadratic) implementation of multi-dimensional median as the minimizer of L1 distance among elements
-	static int compute3DMedianIndex(
-			const std::vector<float>& i_rDataR,
-			const std::vector<float>& i_rDataG,
-			const std::vector<float>& i_rDataB);
+	class SpikeRemovalFilter
+	{
+	public:
+		static void filter(DeepImage<float>& io_rInputColorImage,
+				DeepImage<float>& io_rInputNbOfSamplesImage,
+				DeepImage<float>& io_rInputHistogramImage,
+				DeepImage<float>& io_rInputCovImage,
+				float i_thresholdStDevFactor = 2.f);
+
+	private:
+		static void computeAverageAndStandardDeviation(
+				float& o_rAverage,
+				float& o_rStandardDeviation,
+				const std::vector<float>& i_rData);
+
+		/// @brief Simple and expensive (quadratic) implementation of multi-dimensional median as the minimizer of L1 distance among elements
+		static int compute3DMedianIndex(
+				const std::vector<float>& i_rDataR,
+				const std::vector<float>& i_rDataG,
+				const std::vector<float>& i_rDataB);
 
 
 
-};
+	};
+
+} // namespace bcd
+
 
 #endif

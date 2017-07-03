@@ -9,21 +9,26 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-template<typename T> class DeepImage;
-
-/// @brief Class for various useful functions
-class Utils
+namespace bcd
 {
-private:
-	Utils() {}
 
-public:
-	static bool separateNbOfSamplesFromHistogram(
-			DeepImage<float>& o_rHistImage,
-			DeepImage<float>& o_rNbOfSamplesImage,
-			const DeepImage<float>& i_rHistAndNbOfSamplesImage
-	);
+	template<typename T> class DeepImage;
 
-};
+	/// @brief Class for various useful functions
+	class Utils
+	{
+	private:
+		Utils() {}
+
+	public:
+		static bool separateNbOfSamplesFromHistogram(
+				DeepImage<float>& o_rHistImage,
+				DeepImage<float>& o_rNbOfSamplesImage,
+				const DeepImage<float>& i_rHistAndNbOfSamplesImage
+		);
+
+	};
+
+}
 
 #endif // UTILS_H

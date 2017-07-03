@@ -14,28 +14,33 @@
 
 using namespace std;
 
-bool Utils::separateNbOfSamplesFromHistogram(
-		Deepimf& o_rHistImage,
-		Deepimf& o_rNbOfSamplesImage,
-		const Deepimf& i_rHistAndNbOfSamplesImage)
+namespace bcd
 {
-	int w = i_rHistAndNbOfSamplesImage.getWidth();
-	int h = i_rHistAndNbOfSamplesImage.getHeight();
-	int d = i_rHistAndNbOfSamplesImage.getDepth() - 1;
 
-	o_rHistImage.resize(w, h, d);
-	o_rNbOfSamplesImage.resize(w, h, 1);
-
-	size_t histDataSize = d * sizeof(float);
-	ImfIt histIt = o_rHistImage.begin();
-	ImfIt nbOfSamplesIt = o_rNbOfSamplesImage.begin();
-	ImfConstIt histAndNbOfSamplesIt = i_rHistAndNbOfSamplesImage.begin();
-	ImfConstIt histAndNbOfSamplesItEnd = i_rHistAndNbOfSamplesImage.end();
-
-	for( ; histAndNbOfSamplesIt != histAndNbOfSamplesItEnd; ++histIt, ++nbOfSamplesIt, ++histAndNbOfSamplesIt)
+	bool Utils::separateNbOfSamplesFromHistogram(
+			Deepimf& o_rHistImage,
+			Deepimf& o_rNbOfSamplesImage,
+			const Deepimf& i_rHistAndNbOfSamplesImage)
 	{
-		memcpy(*histIt, *histAndNbOfSamplesIt, histDataSize);
-		nbOfSamplesIt[0] = histAndNbOfSamplesIt[d];
+		int w = i_rHistAndNbOfSamplesImage.getWidth();
+		int h = i_rHistAndNbOfSamplesImage.getHeight();
+		int d = i_rHistAndNbOfSamplesImage.getDepth() - 1;
+
+		o_rHistImage.resize(w, h, d);
+		o_rNbOfSamplesImage.resize(w, h, 1);
+
+		size_t histDataSize = d * sizeof(float);
+		ImfIt histIt = o_rHistImage.begin();
+		ImfIt nbOfSamplesIt = o_rNbOfSamplesImage.begin();
+		ImfConstIt histAndNbOfSamplesIt = i_rHistAndNbOfSamplesImage.begin();
+		ImfConstIt histAndNbOfSamplesItEnd = i_rHistAndNbOfSamplesImage.end();
+
+		for( ; histAndNbOfSamplesIt != histAndNbOfSamplesItEnd; ++histIt, ++nbOfSamplesIt, ++histAndNbOfSamplesIt)
+		{
+			memcpy(*histIt, *histAndNbOfSamplesIt, histDataSize);
+			nbOfSamplesIt[0] = histAndNbOfSamplesIt[d];
+		}
+		return true;
 	}
-	return true;
+
 }

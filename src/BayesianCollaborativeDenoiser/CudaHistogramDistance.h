@@ -9,37 +9,42 @@
 #ifndef CUDA_HISTOGRAM_DISTANCE_H
 #define CUDA_HISTOGRAM_DISTANCE_H
 
-void testCudaPrint();
-
-class CudaHistogramDistance
+namespace bcd
 {
-public:
-	CudaHistogramDistance(const float *i_pHistogramData, const float *i_pNbOfSamplesData,
-			int i_width, int i_height, int i_nbOfBins,
-			int i_patchRadius, int i_searchWindowRadius);
-	~CudaHistogramDistance();
 
-	static int previousPowerOfTwo(int i_number);
+	void testCudaPrint();
 
-	/// @brief Computes distance of patch centered on the input coordinates with all neighbor patches
-	///
-	/// @param[out] o_pDistances Array of size (2*m_searchWindowRadius + 1)^2 to store all the computed distances
-	/// @param[in] i_line Line of the center of the main patch
-	/// @param[in] i_column Column of the center of the main patch
-	void computeDistances(float* o_pDistances, int i_line, int i_column);
+	class CudaHistogramDistance
+	{
+	public:
+		CudaHistogramDistance(const float *i_pHistogramData, const float *i_pNbOfSamplesData,
+				int i_width, int i_height, int i_nbOfBins,
+				int i_patchRadius, int i_searchWindowRadius);
+		~CudaHistogramDistance();
 
-private:
-	float* m_dHistogramData; // device pointer to histogram data
-	float* m_dNbOfSamplesData; // device pointer to number of samples data
-	float* m_dOutputDistances; // device pointer to the computed distances for all neighbor patches
-	int m_width;
-	int m_height;
-	int m_nbOfBins;
-	int m_patchRadius;
-	int m_searchWindowRadius;
-	int m_patchSize;
-	int m_searchWindowSize;
-	int m_nbOfFloatsInHistogramPatch;
-};
+		static int previousPowerOfTwo(int i_number);
+
+		/// @brief Computes distance of patch centered on the input coordinates with all neighbor patches
+		///
+		/// @param[out] o_pDistances Array of size (2*m_searchWindowRadius + 1)^2 to store all the computed distances
+		/// @param[in] i_line Line of the center of the main patch
+		/// @param[in] i_column Column of the center of the main patch
+		void computeDistances(float* o_pDistances, int i_line, int i_column);
+
+	private:
+		float* m_dHistogramData; // device pointer to histogram data
+		float* m_dNbOfSamplesData; // device pointer to number of samples data
+		float* m_dOutputDistances; // device pointer to the computed distances for all neighbor patches
+		int m_width;
+		int m_height;
+		int m_nbOfBins;
+		int m_patchRadius;
+		int m_searchWindowRadius;
+		int m_patchSize;
+		int m_searchWindowSize;
+		int m_nbOfFloatsInHistogramPatch;
+	};
+
+} // namespace bcd
 
 #endif // CUDA_HISTOGRAM_DISTANCE_H

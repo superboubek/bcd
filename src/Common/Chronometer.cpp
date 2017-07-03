@@ -13,77 +13,80 @@
 
 using namespace std;
 
-Chronometer::Chronometer() : m_isRunning(false), m_elapsedTime(0)
+namespace bcd
 {
-}
 
-void Chronometer::reset()
-{
-	m_isRunning = false;
-	m_elapsedTime = 0;
-}
-
-void Chronometer::start()
-{
-	if(m_isRunning)
-		return;
-	m_isRunning = true;
-	m_startTime = std::chrono::high_resolution_clock::now();
-}
-
-void Chronometer::stop()
-{
-	if(!m_isRunning)
-		return;
-	m_elapsedTime = getElapsedTime();
-	m_isRunning = false;
-}
-
-float Chronometer::getElapsedTime()
-{
-	if(m_isRunning)
+	Chronometer::Chronometer() : m_isRunning(false), m_elapsedTime(0)
 	{
-		std::chrono::duration<float> fs = std::chrono::high_resolution_clock::now() - m_startTime;
-		return m_elapsedTime + fs.count();
-	}
-	return m_elapsedTime;
-}
-
-string Chronometer::getStringFromTime(float i_timeInSeconds)
-{
-	ostringstream oss;
-
-	float hms; // for hour minute second
-	oss << i_timeInSeconds*1000.f << " ms";
-	if(i_timeInSeconds >= 1.f)
-	{
-		oss << " ( ";
-		if(i_timeInSeconds >= 3600.f)
-		{
-			hms = floor(i_timeInSeconds/3600.f);
-			oss << hms << "h ";
-			i_timeInSeconds -= hms * 3600.f;
-		}
-		if(i_timeInSeconds >= 60.f)
-		{
-			hms = floor(i_timeInSeconds/60.f);
-			oss << hms << "min ";
-			i_timeInSeconds -= hms * 60.f;
-		}
-		hms = floor(i_timeInSeconds);
-		oss << hms << "s ";
-		i_timeInSeconds -= hms;
-		hms = floor(i_timeInSeconds*1000.f);
-		oss << hms << "ms )";
 	}
 
-	return oss.str();
-}
+	void Chronometer::reset()
+	{
+		m_isRunning = false;
+		m_elapsedTime = 0;
+	}
 
-void Chronometer::printElapsedTime(std::ostream& o_stream)
-{
-	o_stream << getStringFromTime(getElapsedTime());
-}
+	void Chronometer::start()
+	{
+		if(m_isRunning)
+			return;
+		m_isRunning = true;
+		m_startTime = std::chrono::high_resolution_clock::now();
+	}
 
+	void Chronometer::stop()
+	{
+		if(!m_isRunning)
+			return;
+		m_elapsedTime = getElapsedTime();
+		m_isRunning = false;
+	}
 
+	float Chronometer::getElapsedTime()
+	{
+		if(m_isRunning)
+		{
+			std::chrono::duration<float> fs = std::chrono::high_resolution_clock::now() - m_startTime;
+			return m_elapsedTime + fs.count();
+		}
+		return m_elapsedTime;
+	}
+
+	string Chronometer::getStringFromTime(float i_timeInSeconds)
+	{
+		ostringstream oss;
+
+		float hms; // for hour minute second
+		oss << i_timeInSeconds*1000.f << " ms";
+		if(i_timeInSeconds >= 1.f)
+		{
+			oss << " ( ";
+			if(i_timeInSeconds >= 3600.f)
+			{
+				hms = floor(i_timeInSeconds/3600.f);
+				oss << hms << "h ";
+				i_timeInSeconds -= hms * 3600.f;
+			}
+			if(i_timeInSeconds >= 60.f)
+			{
+				hms = floor(i_timeInSeconds/60.f);
+				oss << hms << "min ";
+				i_timeInSeconds -= hms * 60.f;
+			}
+			hms = floor(i_timeInSeconds);
+			oss << hms << "s ";
+			i_timeInSeconds -= hms;
+			hms = floor(i_timeInSeconds*1000.f);
+			oss << hms << "ms )";
+		}
+
+		return oss.str();
+	}
+
+	void Chronometer::printElapsedTime(std::ostream& o_stream)
+	{
+		o_stream << getStringFromTime(getElapsedTime());
+	}
+
+} // namespace bcd
 
