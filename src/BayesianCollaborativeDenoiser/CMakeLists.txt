@@ -31,15 +31,15 @@ if (NOT OPENMP_FOUND)
 	SET(missing_optional_libraries ${missing_optional_libraries} OpenMP)
 endif(NOT OPENMP_FOUND) 
 
-if (NOT OPENEXR_FOUND)
-	SET(required_library_is_missing TRUE)
-	SET(missing_required_libraries ${missing_required_libraries} OpenEXR)
-endif(NOT OPENEXR_FOUND)
-
-if (NOT EIGEN3_FOUND)
-	SET(required_library_is_missing TRUE)
-	SET(missing_required_libraries ${missing_required_libraries} Eigen)
-endif(NOT EIGEN3_FOUND)
+# if (NOT OPENEXR_FOUND)
+# 	SET(required_library_is_missing TRUE)
+# 	SET(missing_required_libraries ${missing_required_libraries} OpenEXR)
+# endif(NOT OPENEXR_FOUND)
+#
+# if (NOT EIGEN3_FOUND)
+# 	SET(required_library_is_missing TRUE)
+# 	SET(missing_required_libraries ${missing_required_libraries} Eigen)
+# endif(NOT EIGEN3_FOUND)
 
 if (NOT CUDA_FOUND)
 	SET(optional_library_is_missing TRUE)
@@ -69,14 +69,14 @@ else(OPENMP_FOUND)
 	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas") # to avoid warnings ; drawback : that could hide warnings unrelated to OpenMP...
 endif(OPENMP_FOUND)
 
-if(OPENEXR_FOUND)
-	INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
-	SET(libs ${libs} ${OPENEXR_LIBRARIES})
-endif(OPENEXR_FOUND)
-
-IF(EIGEN3_FOUND)
-	INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
-ENDIF(EIGEN3_FOUND)
+# if(OPENEXR_FOUND)
+# 	INCLUDE_DIRECTORIES(${OPENEXR_INCLUDE_PATHS})
+# 	SET(libs ${libs} ${OPENEXR_LIBRARIES})
+# endif(OPENEXR_FOUND)
+#
+# IF(EIGEN3_FOUND)
+# 	INCLUDE_DIRECTORIES(${EIGEN3_INCLUDE_DIR})
+# ENDIF(EIGEN3_FOUND)
 
 # Finally we compile the target
 
@@ -122,7 +122,10 @@ ENDIF(CUDA_FOUND)
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES LINKER_LANGUAGE CXX)
 
-TARGET_LINK_LIBRARIES(${target_name} ${libs})
+# TARGET_LINK_LIBRARIES(${target_name} ${libs})
+#TARGET_LINK_LIBRARIES(${target_name} Half Iex Imath IlmImf IlmThread)
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE OpenExr)
+TARGET_LINK_LIBRARIES(${target_name} PUBLIC eigen)
 
 INSTALL(TARGETS ${target_name} ARCHIVE DESTINATION lib)
 

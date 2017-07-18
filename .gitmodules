@@ -1,3 +1,6 @@
 [submodule "src/ext/nanogui"]
 	path = src/ext/nanogui
 	url = https://github.com/wjakob/nanogui
+[submodule "src/ext/eigen"]
+	path = src/ext/eigen
+	url = https://github.com/libigl/eigen.git
