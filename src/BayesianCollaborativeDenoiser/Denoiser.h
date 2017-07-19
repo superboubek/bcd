@@ -66,8 +66,6 @@ namespace bcd
 
 #endif
 
-	class PixelPosition;
-
 	/// @brief Class to implement the monoscale Bayesian Collaborative Filtering for Monte-Carlo Rendering
 	class Denoiser : public IDenoiser
 	{

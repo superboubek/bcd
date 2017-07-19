@@ -61,6 +61,7 @@ namespace bcd
 
 		FilePathFormVariable m_outputFilePath;
 
+		int m_nbOfScales;
 		DenoiserParameters m_denoiserParameters;
 		DenoiserInputs m_denoiserInputs;
 		DenoiserOutputs m_denoiserOutputs;

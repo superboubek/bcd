@@ -53,7 +53,10 @@ public:
 					m_pTextBox->callback()(m_pTextBox->value());
 				});
 	}
-	void setValue(const FilePathFormVariable& i_rFilePath) { m_pTextBox->setValue(i_rFilePath.m_filePath); }
+	void setValue(const FilePathFormVariable& i_rFilePath)
+	{
+		m_pTextBox->setValue(i_rFilePath.m_filePath);
+	}
 	void setEditable(bool i_editable) { m_pTextBox->setEditable(i_editable); m_pBrowseButton->setEnabled(i_editable); }
 	FilePathFormVariable value() const { return FilePathFormVariable(m_pTextBox->value()); }
 
@@ -69,6 +72,10 @@ public:
 	void setButtonText(const string& i_rButtonText)
 	{
 		m_pBrowseButton->setCaption(i_rButtonText);
+	}
+	void callback() // TODO: this method is just temporary?
+	{
+		m_pTextBox->callback()(m_pTextBox->value());
 	}
 
 private:
@@ -98,6 +105,7 @@ GuiWindow::GuiWindow() :
 		1 // glMinor
 		),
 		m_inputsAreLoaded(false),
+		m_nbOfScales(3),
 		m_uColorInputImage(new Deepimf()),
 		m_uNbOfSamplesInputImage(new Deepimf()),
 		m_uHistInputImage(new Deepimf()),
@@ -143,6 +151,7 @@ void GuiWindow::buildGui()
 	auto inputCovWidget = pFormHelper->addVariable("Covariance image", m_covInputFilePath);
 
 	pFormHelper->addGroup("Parameters");
+	pFormHelper->addVariable("Nb of scales", m_nbOfScales);
 	pFormHelper->addVariable("Hist distance threshold", m_denoiserParameters.m_histogramDistanceThreshold);
 	pFormHelper->addVariable("Use CUDA", m_denoiserParameters.m_useCuda);
 	pFormHelper->addVariable("Nb of cores used (0 = default)", m_denoiserParameters.m_nbOfCores);
@@ -153,7 +162,7 @@ void GuiWindow::buildGui()
 	pFormHelper->addVariable("Min eigen value", m_denoiserParameters.m_minEigenValue);
 
 	pFormHelper->addGroup("Outputs");
-	pFormHelper->addVariable("Output file", m_outputFilePath);
+	auto outputFileWidget = pFormHelper->addVariable("Output file", m_outputFilePath);
 
 	auto denoiseButton = pFormHelper->addButton("Denoise",
 			[this]()
@@ -164,17 +173,29 @@ void GuiWindow::buildGui()
 						cerr << "Error: invalid output path '" << m_outputFilePath.m_filePath << "'!" << endl;
 						return;
 					}
-				Denoiser denoiser;
-				denoiser.setInputs(m_denoiserInputs);
-				denoiser.setParameters(m_denoiserParameters);
-				denoiser.setOutputs(m_denoiserOutputs);
 
-				denoiser.denoise();
+				Deepimf outputDenoisedColorImage(*m_denoiserInputs.m_pColors);
+				m_denoiserOutputs.m_pDenoisedColors = &outputDenoisedColorImage;
+
+				unique_ptr<IDenoiser> uDenoiser = nullptr;
+
+				if(m_nbOfScales > 1)
+					uDenoiser.reset(new MultiscaleDenoiser(m_nbOfScales));
+				else
+					uDenoiser.reset(new Denoiser());
+
+				uDenoiser->setInputs(m_denoiserInputs);
+				uDenoiser->setOutputs(m_denoiserOutputs);
+				uDenoiser->setParameters(m_denoiserParameters);
+
+				uDenoiser->denoise();
 
 //				checkAndPutToZeroNegativeInfNaNValues(outputDenoisedColorImage); // TODO: put in utils?
 
-				ImageIO::writeEXR(*m_denoiserOutputs.m_pDenoisedColors, m_outputFilePath.m_filePath.c_str());
+				ImageIO::writeEXR(outputDenoisedColorImage, m_outputFilePath.m_filePath.c_str());
 				cout << "Written denoised output in file " << m_outputFilePath.m_filePath.c_str() << endl;
+
+
 
 			});
 //	denoiseButton->setEnabled(false);
@@ -240,14 +261,23 @@ void GuiWindow::buildGui()
 				}
 				m_covInputFilePath = i_rFilePath;
 				cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-				if(ImageIO::loadEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
+				if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
 					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
 				else
 					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
 			}
 			);
 
-
+	// begin of tmp adds to ease testing
+	inputColorWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test.exr"));
+	inputColorWidget->callback();
+	inputHistWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_hist.exr"));
+	inputHistWidget->callback();
+	inputCovWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_cov.exr"));
+	inputCovWidget->callback();
+	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
+	outputFileWidget->callback();
+	// end of tmp adds to ease testing
 
 }
 
