@@ -13,11 +13,6 @@ PROJECT(BayesianCollaborativeDenoising)
 OPTION(BCD_BUILD_GUI "Build a GUI executable for bcd, using library NanoGUI" ON)
 OPTION(BCD_USE_CUDA "Use CUDA for accelerating computations" ON)
 
-#C++11
-IF(NOT WIN32)
-	SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11")
-ENDIF(NOT WIN32)
-
 # Add CMake folder to the  module path : contains CMake specific files *.cmake
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH} )
 
@@ -29,25 +24,17 @@ IF(NOT CMAKE_BUILD_TYPE)
 		FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-
-#IF(WIN32)
-#	ADD_DEFINITIONS(-DOPENEXR_DLL)
-#ENDIF(WIN32)
-
-# FIND_PACKAGE(OpenEXR)
-# IF(NOT OPENEXR_FOUND)
-# 	MESSAGE(WARNING "Could not find OpenEXR library")
-# ENDIF(NOT OPENEXR_FOUND)
-
+# OpenMP
 FIND_PACKAGE(OpenMP)
-IF(NOT OPENMP_FOUND)
+IF(OPENMP_FOUND)
+	add_library(OpenMP INTERFACE)
+	target_compile_options(OpenMP INTERFACE ${OpenMP_CXX_FLAGS})
+	if(NOT MSVC)
+		target_link_libraries(OpenMP INTERFACE gomp)
+	endif()
+else()
 	MESSAGE(WARNING "Could not find OpenMP library")
-ENDIF(NOT OPENMP_FOUND)
-
-# FIND_PACKAGE(Eigen3)
-# IF(NOT EIGEN3_FOUND)
-# 	MESSAGE(WARNING "Could not find Eigen library")
-# ENDIF(NOT EIGEN3_FOUND)
+ENDIF()
 
 IF(BCD_USE_CUDA)
 
