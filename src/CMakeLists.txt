@@ -99,8 +99,13 @@ IF(BCD_USE_CUDA)
 
 ENDIF(BCD_USE_CUDA)
 
+
+
+
+
+
 # Verbose option: put ON to see the whole build command lines
-SET(CMAKE_VERBOSE_MAKEFILE ON)
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 SET(bcd_folder_name "BayesianCollaborativeDenoiser")
 SET(bcd_folder "${CMAKE_SOURCE_DIR}/${bcd_folder_name}")
@@ -109,16 +114,16 @@ SET(exr_folder "${common_folder}/exr")
 
 SET(bcd_library "")
 
-MESSAGE(STATUS "Entering subdirectory 'ext'")
+#MESSAGE(STATUS "Entering subdirectory 'ext'")
 ADD_SUBDIRECTORY(ext)
 
-MESSAGE(STATUS "Entering subdirectory '${bcd_folder_name}'")
+#MESSAGE(STATUS "Entering subdirectory '${bcd_folder_name}'")
 ADD_SUBDIRECTORY(${bcd_folder_name})
 
-MESSAGE(STATUS "Entering subdirectory 'bcd_cli'")
+#MESSAGE(STATUS "Entering subdirectory 'bcd_cli'")
 ADD_SUBDIRECTORY(bcd_cli)
 
-MESSAGE(STATUS "Entering subdirectory 'Raw2BcdInputs'")
+#MESSAGE(STATUS "Entering subdirectory 'Raw2BcdInputs'")
 ADD_SUBDIRECTORY(Raw2BcdInputs)
 
 IF(BCD_BUILD_GUI)

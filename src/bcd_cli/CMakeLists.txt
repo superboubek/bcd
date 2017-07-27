@@ -9,46 +9,9 @@
 SET(target_name bcd_cli)
 
 
-# First we check whether optional and required libraries have been found
-
-SET(required_library_is_missing FALSE)
-SET(missing_required_libraries "")
-
-SET(optional_library_is_missing FALSE)
-SET(missing_optional_libraries "")
-
-
-#if (NOT OPENMP_FOUND)
-#	SET(optional_library_is_missing TRUE)
-#	SET(missing_optional_libraries ${missing_optional_libraries} OpenMP)
-#endif(NOT OPENMP_FOUND)
-
-if(optional_library_is_missing)
-	message(WARNING "missing optional libraries ${missing_optional_libraries} for target ${target_name}")
-endif(optional_library_is_missing)
-
-if(required_library_is_missing)
-	message(WARNING "disabling target ${target_name} which requires libraries ${missing_required_libraries}")
-	return()
-endif(required_library_is_missing)
-
-
-
-# Then we add include directories, libraries and definitions related to the dependencies
-
-#if (OPENMP_FOUND)
-#	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#else(OPENMP_FOUND)
-#	SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unknown-pragmas") # to avoid warnings ; drawback : that could hide warnings unrelated to OpenMP...
-#	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unknown-pragmas") # to avoid warnings ; drawback : that could hide warnings unrelated to OpenMP...
-#endif(OPENMP_FOUND)
-
-# Finally we compile the target
-
-INCLUDE_DIRECTORIES(${common_folder})
-INCLUDE_DIRECTORIES(${exr_folder})
-INCLUDE_DIRECTORIES(${bcd_folder})
+#INCLUDE_DIRECTORIES(${common_folder})
+#INCLUDE_DIRECTORIES(${exr_folder})
+#INCLUDE_DIRECTORIES(${bcd_folder})
 
 SET(src_files
 	main.cpp
@@ -60,9 +23,8 @@ SET(header_implementation_files
 
 ADD_EXECUTABLE(${target_name} ${src_files} ${header_files} ${header_implementation_files})
 
-set_target_properties(${target_name} PROPERTIES CXX_STANDARD 11)
+SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${bcd_library})
-
 
 INSTALL(TARGETS ${target_name} RUNTIME DESTINATION bin)
