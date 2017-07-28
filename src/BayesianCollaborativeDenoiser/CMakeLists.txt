@@ -51,6 +51,7 @@ endif(required_library_is_missing)
 
 SET(src_files
 	Denoiser.cpp
+	DenoisingUnit.cpp
 	MultiscaleDenoiser.cpp
 	SpikeRemovalFilter.cpp
 	${common_folder}/Chronometer.cpp
@@ -62,6 +63,7 @@ SET(src_files
 SET(header_files
 	IDenoiser.h
 	Denoiser.h
+	DenoisingUnit.h
 	MultiscaleDenoiser.h
 	SpikeRemovalFilter.h
 	${common_folder}/DeepImage.h
@@ -96,7 +98,7 @@ TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC ${bcd_folder})
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 TARGET_LINK_LIBRARIES(${target_name} PUBLIC OpenMP)
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE OpenExr)
-TARGET_LINK_LIBRARIES(${target_name} PUBLIC eigen)
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE eigen)
 
 INSTALL(TARGETS ${target_name} ARCHIVE DESTINATION lib)
 

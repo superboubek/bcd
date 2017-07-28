@@ -17,6 +17,7 @@
 
 #include <iostream>
 
+#include <cassert>
 
 //#define SAVE_ADDITIONAL_OUTPUTS
 #ifdef SAVE_ADDITIONAL_OUTPUTS
