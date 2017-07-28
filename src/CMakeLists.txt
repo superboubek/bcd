@@ -127,7 +127,6 @@ ADD_SUBDIRECTORY(bcd_cli)
 ADD_SUBDIRECTORY(Raw2BcdInputs)
 
 IF(BCD_BUILD_GUI)
-	ADD_SUBDIRECTORY(ext/nanogui)
 	ADD_SUBDIRECTORY(bcd_nanogui)
 ELSE(BCD_BUILD_GUI)
 	MESSAGE(STATUS "skipping building of GUI executable")

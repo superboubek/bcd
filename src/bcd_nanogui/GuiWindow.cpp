@@ -17,8 +17,6 @@
 #include "Chronometer.h"
 #include "Utils.h"
 
-#include "io_exr.h"
-
 #include <nanogui/nanogui.h>
 
 #include <Eigen/Dense>

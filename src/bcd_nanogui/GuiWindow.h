@@ -4,7 +4,7 @@
 
 #include "IDenoiser.h"
 
-#include <nanogui/screen.h>
+#include "nanogui/screen.h"
 
 #include <string>
 

@@ -8,11 +8,6 @@
 
 SET(target_name bcd_cli)
 
-
-#INCLUDE_DIRECTORIES(${common_folder})
-#INCLUDE_DIRECTORIES(${exr_folder})
-#INCLUDE_DIRECTORIES(${bcd_folder})
-
 SET(src_files
 	main.cpp
 )
