@@ -14,7 +14,7 @@
 # ---------------------------------------------------------------------------------------------------
 
 
-SET(target_name bcd_nanogui)
+SET(target_name bcd_gui)
 
 SET(src_files
 	main.cpp
