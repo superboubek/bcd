@@ -5,6 +5,7 @@
 #include "IDenoiser.h"
 
 #include "nanogui/screen.h"
+#include "nanogui/glutil.h"
 
 #include <string>
 
@@ -47,6 +48,7 @@ namespace bcd
 
 	private:
 		void buildGui();
+		void initOpenGL();
 
 	private:
 		FilePathFormVariable m_colorInputFilePath;
@@ -72,6 +74,8 @@ namespace bcd
 		std::unique_ptr< DeepImage<float> > m_uCovInputImage;
 		std::unique_ptr< DeepImage<float> > m_uOutputImage;
 
+
+		nanogui::GLShader m_shaderProgram;
 
 
 	};
