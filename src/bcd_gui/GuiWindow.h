@@ -4,8 +4,8 @@
 
 #include "IDenoiser.h"
 
-#include "nanogui/screen.h"
 #include "nanogui/glutil.h"
+#include "nanogui/screen.h"
 
 #include <string>
 

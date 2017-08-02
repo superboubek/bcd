@@ -31,6 +31,6 @@ ADD_EXECUTABLE(${target_name} ${src_files} ${header_files} ${header_implementati
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${bcd_library})
-TARGET_LINK_LIBRARIES(${target_name} PRIVATE nanogui)
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE NanoguiTarget)
 
 INSTALL(TARGETS ${target_name} RUNTIME DESTINATION bin)
