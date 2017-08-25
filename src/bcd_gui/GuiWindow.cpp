@@ -22,6 +22,8 @@
 
 #include <Eigen/Dense>
 
+#include <array>
+
 #include <fstream>
 
 #include <iostream>
@@ -127,8 +129,8 @@ GuiWindow::~GuiWindow()
 
 void GuiWindow::displayUntilClosed()
 {
-	buildGui();
 	initOpenGL();
+	buildGui();
 
 	setVisible(true);
 
@@ -215,6 +217,16 @@ void GuiWindow::buildGui()
 				{
 					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
 
+
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, m_textureIds[0]);
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+							m_uColorInputImage->getWidth(),
+							m_uColorInputImage->getHeight(),
+							0, GL_RGB, GL_FLOAT,
+							m_uColorInputImage->getDataPtr());
+
+
 				}
 				else
 					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
@@ -276,8 +288,36 @@ void GuiWindow::buildGui()
 
 }
 
+void GuiWindow::initTextures()
+{
+	const int nbOfTextures = 1;
+
+	glGenTextures(m_textureIds.size(), m_textureIds.data());
+
+	GLsizei width = 1, height = 1;
+	array<float, 3> defaultData = { 0.6f, 0.2f, 0.1f };
+
+
+	for(int i = 0; i < m_textureIds.size(); ++i)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, m_textureIds[i]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
+				GL_RGB, GL_FLOAT, defaultData.data());
+	}
+}
+
 void GuiWindow::initOpenGL()
 {
+
+	// glEnable(GL_TEXTURE_2D);
+
+	initTextures();
 	m_shaderProgram.init(
 		/* An identifying name */
 		"a_simple_shader",
@@ -286,17 +326,23 @@ void GuiWindow::initOpenGL()
 		"#version 330\n"
 		"uniform mat4 modelViewProj;\n"
 		"in vec3 position;\n"
+		"in vec2 vertexTexCoords;\n"
+		"out vec2 texCoords;\n"
 		"void main() {\n"
-		"    gl_Position = modelViewProj * vec4(position, 1.0);\n"
+		"	gl_Position = modelViewProj * vec4(position, 1.0);\n"
+		"	texCoords = vertexTexCoords;\n"
 		"}",
 
 		/* Fragment shader */
 		"#version 330\n"
+		"in vec2 texCoords;\n"
 		"out vec4 color;\n"
 		"uniform float intensity;\n"
+		"uniform sampler2D textureSampler;\n"
 		"void main() {\n"
-		"    color = vec4(vec3(intensity), 1.0);\n"
-		"}"
+		"	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);\n"
+		// "	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
+					"}"
 	);
 
 	MatrixXu indices(3, 2); /* Draw 2 triangles */
@@ -309,10 +355,19 @@ void GuiWindow::initOpenGL()
 	positions.col(2) <<  1,  1, 0;
 	positions.col(3) << -1,  1, 0;
 
+	MatrixXf vertexTexCoords(2, 4);
+	vertexTexCoords.col(0) << 0, 0;
+	vertexTexCoords.col(1) << 1, 0;
+	vertexTexCoords.col(2) << 1, 1;
+	vertexTexCoords.col(3) << 0, 1;
+
 	m_shaderProgram.bind();
 	m_shaderProgram.uploadIndices(indices);
 	m_shaderProgram.uploadAttrib("position", positions);
-	m_shaderProgram.setUniform("intensity", 0.5f);
+	m_shaderProgram.uploadAttrib("vertexTexCoords", vertexTexCoords);
+//	m_shaderProgram.setUniform("intensity", 0.5f);
+	m_shaderProgram.setUniform("textureSampler", GLuint(0)); // TODO: replace this 0 by a variable?
+//	glUniform1i(m_shaderProgram.uniform("textureSampler"), 0);
 }
 
 void GuiWindow::drawContents()
@@ -320,6 +375,12 @@ void GuiWindow::drawContents()
 	using namespace nanogui;
 
 	/* Draw the window contents using OpenGL */
+
+	for(int i = 0; i < m_textureIds.size(); ++i)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, m_textureIds[i]);
+	}
 	m_shaderProgram.bind();
 
 	Matrix4f mvp;

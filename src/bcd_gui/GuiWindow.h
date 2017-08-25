@@ -38,6 +38,7 @@ namespace bcd
 	class GuiWindow : public nanogui::Screen
 	{
 	public:
+
 		GuiWindow();
 		~GuiWindow();
 
@@ -48,6 +49,7 @@ namespace bcd
 
 	private:
 		void buildGui();
+		void initTextures();
 		void initOpenGL();
 
 	private:
@@ -76,6 +78,8 @@ namespace bcd
 
 
 		nanogui::GLShader m_shaderProgram;
+
+		std::array<GLuint, 1> m_textureIds;
 
 
 	};
