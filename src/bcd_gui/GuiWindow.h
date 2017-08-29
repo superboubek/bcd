@@ -34,6 +34,34 @@ namespace bcd
 	};
 
 
+	struct DisplayView
+	{
+		float m_initialWidth;
+		float m_initialHeight;
+		float m_xMin;
+		float m_yMin;
+		float m_width;
+		float m_height;
+		float m_totalZoomExponent; // accumulation of wheel moves
+
+		static const float s_zoomFactor;
+		static const float s_wheelFactor;
+
+		DisplayView() :
+				m_initialWidth(2.f),
+				m_initialHeight(2.f),
+				m_width(2.f),
+				m_height(2.f),
+				m_xMin(-1.f),
+				m_yMin(-1.f),
+				m_totalZoomExponent(0.f)
+		{}
+
+		void reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight);
+
+		void print();
+
+	};
 
 	class GuiWindow : public nanogui::Screen
 	{
@@ -46,6 +74,18 @@ namespace bcd
 
 		virtual void drawContents();
 
+		void setCamera();
+
+//		bool cursorPosCallbackEvent(double x, double y);
+//		virtual bool mouseButtonEvent(int button, int action, int modifiers);
+//		bool keyCallbackEvent(int key, int scancode, int action, int mods);
+//		bool charCallbackEvent(unsigned int codepoint);
+//		bool dropCallbackEvent(int count, const char **filenames);
+//		virtual bool scrollEvent(double x, double y);
+//		bool resizeCallbackEvent(int width, int height);
+
+		virtual bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers);
+		virtual bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel);
 
 	private:
 		void buildGui();
@@ -81,6 +121,7 @@ namespace bcd
 
 		std::array<GLuint, 1> m_textureIds;
 
+		DisplayView m_displayView;
 
 	};
 

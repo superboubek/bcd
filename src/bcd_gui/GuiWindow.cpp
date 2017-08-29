@@ -18,6 +18,8 @@
 #include "Chronometer.h"
 #include "Utils.h"
 
+#include <json.hpp>
+
 #include <nanogui/nanogui.h>
 
 #include <Eigen/Dense>
@@ -32,10 +34,17 @@
 using namespace std;
 using namespace nanogui;
 using namespace bcd;
+using json = nlohmann::json;
+
+
+const float DisplayView::s_zoomFactor = 1.08f;
+const float DisplayView::s_wheelFactor = 1.f;
 
 
 NAMESPACE_BEGIN(nanogui)
 NAMESPACE_BEGIN(detail)
+
+
 
 template <> class FormWidget<FilePathFormVariable> : public Widget
 {
@@ -127,10 +136,22 @@ GuiWindow::~GuiWindow()
 {
 }
 
+void testJson()
+{
+	json j;
+	j["pi"] = 3.141;
+	j["happy"] = true;
+	j["name"] = "Niels";
+
+	cout << setw(2) << j << endl;
+}
+
 void GuiWindow::displayUntilClosed()
 {
 	initOpenGL();
 	buildGui();
+
+//	testJson();
 
 	setVisible(true);
 
@@ -217,7 +238,6 @@ void GuiWindow::buildGui()
 				{
 					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
 
-
 					glActiveTexture(GL_TEXTURE0);
 					glBindTexture(GL_TEXTURE_2D, m_textureIds[0]);
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
@@ -226,7 +246,8 @@ void GuiWindow::buildGui()
 							0, GL_RGB, GL_FLOAT,
 							m_uColorInputImage->getDataPtr());
 
-
+					m_displayView.reset(width(), height(), m_uColorInputImage->getWidth(), m_uColorInputImage->getHeight());
+					setCamera();
 				}
 				else
 					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
@@ -342,7 +363,7 @@ void GuiWindow::initOpenGL()
 		"void main() {\n"
 		"	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);\n"
 		// "	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
-					"}"
+		"}"
 	);
 
 	MatrixXu indices(3, 2); /* Draw 2 triangles */
@@ -356,18 +377,22 @@ void GuiWindow::initOpenGL()
 	positions.col(3) << -1,  1, 0;
 
 	MatrixXf vertexTexCoords(2, 4);
-	vertexTexCoords.col(0) << 0, 0;
-	vertexTexCoords.col(1) << 1, 0;
-	vertexTexCoords.col(2) << 1, 1;
-	vertexTexCoords.col(3) << 0, 1;
+	vertexTexCoords.col(0) << 0, 1;
+	vertexTexCoords.col(1) << 1, 1;
+	vertexTexCoords.col(2) << 1, 0;
+	vertexTexCoords.col(3) << 0, 0;
 
 	m_shaderProgram.bind();
 	m_shaderProgram.uploadIndices(indices);
 	m_shaderProgram.uploadAttrib("position", positions);
 	m_shaderProgram.uploadAttrib("vertexTexCoords", vertexTexCoords);
+
+
 //	m_shaderProgram.setUniform("intensity", 0.5f);
 	m_shaderProgram.setUniform("textureSampler", GLuint(0)); // TODO: replace this 0 by a variable?
 //	glUniform1i(m_shaderProgram.uniform("textureSampler"), 0);
+
+	setCamera();
 }
 
 void GuiWindow::drawContents()
@@ -383,15 +408,95 @@ void GuiWindow::drawContents()
 	}
 	m_shaderProgram.bind();
 
-	Matrix4f mvp;
-	mvp.setIdentity();
-	mvp.topLeftCorner<3,3>() = Matrix3f(Eigen::AngleAxisf((float) glfwGetTime(),  Vector3f::UnitZ())) * 0.25f;
-
-	mvp.row(0) *= (float) mSize.y() / (float) mSize.x();
-
-	m_shaderProgram.setUniform("modelViewProj", mvp);
+//	Matrix4f mvp;
+//	mvp.setIdentity();
+//	Eigen::Matrix4f
+//	mvp.topLeftCorner<3,3>() = Matrix3f(Eigen::AngleAxisf((float) glfwGetTime(),  Vector3f::UnitZ())) * 0.25f;
+//
+//	mvp.row(0) *= (float) mSize.y() / (float) mSize.x();
+//
+//	m_shaderProgram.setUniform("modelViewProj", mvp);
 
 	/* Draw 2 triangles starting at index 0 */
 	m_shaderProgram.drawIndexed(GL_TRIANGLES, 0, 2);
+}
+
+
+void GuiWindow::setCamera()
+{
+	m_displayView.print();
+
+	Eigen::Matrix4f mvp;
+	mvp.setIdentity();
+	float zoomFactorX = 2.f / m_displayView.m_width;
+	float zoomFactorY = 2.f / m_displayView.m_height;
+	float dx = -1 - m_displayView.m_xMin * zoomFactorX;
+	float dy = -1 - m_displayView.m_yMin * zoomFactorY;
+
+	mvp(0,0) = zoomFactorX;
+	mvp(1,1) = zoomFactorY;
+	mvp(0,3) = dx;
+	mvp(1,3) = dy;
+
+	m_shaderProgram.bind();
+	m_shaderProgram.setUniform("modelViewProj", mvp);
+}
+
+void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight)
+{
+	m_initialWidth = float(windowWidth) / float(imageWidth);
+	m_initialHeight = float(windowHeight) / float(imageHeight);
+	m_width = m_initialWidth;
+	m_height = m_initialHeight;
+	m_xMin = -0.5f * m_initialWidth;
+	m_yMin = -0.5f * m_initialHeight;
+	m_totalZoomExponent = 0.f;
+}
+
+void DisplayView::print()
+{
+	cout << "viewport (x,y) in [" << m_xMin << ", " << m_xMin + m_width << "] x [" << m_yMin << ", " << m_yMin + m_height << "]" << endl;
+}
+
+
+bool GuiWindow::mouseButtonEvent(const Vector2i &p, int button, bool down, int modifiers)
+{
+	cout << "Entering GuiWindow::mouseButtonEvent(p = " << p << ", button = " << button << ", down = " << down << ", modifiers = " << modifiers << ")" << endl;
+	if(Widget::mouseButtonEvent(p, button, down, modifiers))
+		return true;
+	cout << "passed super call Widget::mouseButtonEvent" << endl;
+
+	return false;
+}
+
+
+bool GuiWindow::scrollEvent(const Vector2i &p, const Vector2f &rel)
+{
+	cout << "Entering GuiWindow::scrollEvent(p = " << p << ", rel = " << rel << ")" << endl;
+	if(Widget::scrollEvent(p, rel))
+		return true;
+	cout << "passed super call Widget::scrollEvent" << endl;
+
+	int mouseX = p(0);
+	int mouseY = p(1);
+
+	cout << "mouse (x,y) = (" << mouseX << ", " << mouseY << ")" << endl;
+
+	int nx = width();
+	int ny = height();
+	float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / nx;
+	float y = m_displayView.m_yMin + (m_displayView.m_height * (ny - mouseY)) / ny;
+	m_displayView.m_totalZoomExponent -= rel(1) * m_displayView.s_wheelFactor;
+	m_displayView.m_width = m_displayView.m_initialWidth * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
+	m_displayView.m_height = m_displayView.m_initialHeight * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
+	m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / nx;
+	m_displayView.m_yMin = y - (m_displayView.m_height * (ny - mouseY)) / ny;
+
+	setCamera();
+
+//	update();
+
+
+	return true;
 }
 
