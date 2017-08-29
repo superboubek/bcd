@@ -340,31 +340,34 @@ void GuiWindow::initOpenGL()
 
 	initTextures();
 	m_shaderProgram.init(
-		/* An identifying name */
-		"a_simple_shader",
+			"simple_image_viewer",
 
-		/* Vertex shader */
-		"#version 330\n"
-		"uniform mat4 modelViewProj;\n"
-		"in vec3 position;\n"
-		"in vec2 vertexTexCoords;\n"
-		"out vec2 texCoords;\n"
-		"void main() {\n"
-		"	gl_Position = modelViewProj * vec4(position, 1.0);\n"
-		"	texCoords = vertexTexCoords;\n"
-		"}",
+			// Vertex shader
+			R"(
+#version 330
+uniform mat4 modelViewProj;
+in vec3 position;
+in vec2 vertexTexCoords;
+out vec2 texCoords;
+void main() {
+	gl_Position = modelViewProj * vec4(position, 1.0);
+	texCoords = vertexTexCoords;
+}
+			)",
 
-		/* Fragment shader */
-		"#version 330\n"
-		"in vec2 texCoords;\n"
-		"out vec4 color;\n"
-		"uniform float intensity;\n"
-		"uniform sampler2D textureSampler;\n"
-		"void main() {\n"
-		"	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);\n"
-		// "	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
-		"}"
-	);
+			// Fragment shader
+			R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform float intensity;
+uniform sampler2D textureSampler;
+void main() {
+	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);
+//	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
+}
+			)"
+			);
 
 	MatrixXu indices(3, 2); /* Draw 2 triangles */
 	indices.col(0) << 0, 1, 2;
@@ -424,7 +427,7 @@ void GuiWindow::drawContents()
 
 void GuiWindow::setCamera()
 {
-	m_displayView.print();
+//	m_displayView.print();
 
 	Eigen::Matrix4f mvp;
 	mvp.setIdentity();
@@ -444,8 +447,8 @@ void GuiWindow::setCamera()
 
 void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight)
 {
-	m_initialWidth = float(windowWidth) / float(imageWidth);
-	m_initialHeight = float(windowHeight) / float(imageHeight);
+	m_initialWidth = 2.0f * float(windowWidth) / float(imageWidth);
+	m_initialHeight = 2.0f * float(windowHeight) / float(imageHeight);
 	m_width = m_initialWidth;
 	m_height = m_initialHeight;
 	m_xMin = -0.5f * m_initialWidth;
@@ -461,36 +464,75 @@ void DisplayView::print()
 
 bool GuiWindow::mouseButtonEvent(const Vector2i &p, int button, bool down, int modifiers)
 {
-	cout << "Entering GuiWindow::mouseButtonEvent(p = " << p << ", button = " << button << ", down = " << down << ", modifiers = " << modifiers << ")" << endl;
+//	cout << "Entering GuiWindow::mouseButtonEvent(p = " << p << ", button = " << button << ", down = " << down << ", modifiers = " << modifiers << ")" << endl;
 	if(Widget::mouseButtonEvent(p, button, down, modifiers))
 		return true;
-	cout << "passed super call Widget::mouseButtonEvent" << endl;
+//	cout << "passed super call Widget::mouseButtonEvent" << endl;
 
-	return false;
+	if(down)
+		m_mouseMovedBeforeButtonRelease = false;
+	else if(!m_mouseMovedBeforeButtonRelease)
+		mouseClickEvent(p, button, modifiers);
+
+	return true;
+}
+
+bool GuiWindow::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int buttons, int modifiers)
+{
+	// cout << "Entering GuiWindow::mouseMotionEvent(p = " << p << ", rel = " << rel << ", button = " << button << ", modifiers = " << modifiers << ")" << endl;
+	if(Widget::mouseMotionEvent(p, rel, buttons, modifiers))
+		return true;
+	// cout << "passed super call Widget::mouseMotionEvent" << endl;
+
+	if(buttons)
+		m_mouseMovedBeforeButtonRelease = true;
+
+	if(buttons & (1 << GLFW_MOUSE_BUTTON_2))
+	{
+		m_displayView.m_xMin -= (m_displayView.m_width * float(rel(0))) / float(width());
+		m_displayView.m_yMin += (m_displayView.m_height * float(rel(1))) / float(height());
+		setCamera();
+	}
+
+	return true;
+
 }
 
 
+bool GuiWindow::mouseDragEvent(const Vector2i &p, const Vector2i &rel, int button, int modifiers)
+{
+//	cout << "Entering GuiWindow::mouseDragEvent(p = " << p << ", rel = " << rel << ", button = " << button << ", modifiers = " << modifiers << ")" << endl;
+	if(Widget::mouseDragEvent(p, rel, button, modifiers))
+		return true;
+//	cout << "passed super call Widget::mouseDragEvent" << endl;
+
+
+
+	return true;
+
+}
+
 bool GuiWindow::scrollEvent(const Vector2i &p, const Vector2f &rel)
 {
-	cout << "Entering GuiWindow::scrollEvent(p = " << p << ", rel = " << rel << ")" << endl;
+//	cout << "Entering GuiWindow::scrollEvent(p = " << p << ", rel = " << rel << ")" << endl;
 	if(Widget::scrollEvent(p, rel))
 		return true;
-	cout << "passed super call Widget::scrollEvent" << endl;
+//	cout << "passed super call Widget::scrollEvent" << endl;
 
 	int mouseX = p(0);
 	int mouseY = p(1);
 
-	cout << "mouse (x,y) = (" << mouseX << ", " << mouseY << ")" << endl;
+//	cout << "mouse (x,y) = (" << mouseX << ", " << mouseY << ")" << endl;
 
-	int nx = width();
-	int ny = height();
-	float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / nx;
-	float y = m_displayView.m_yMin + (m_displayView.m_height * (ny - mouseY)) / ny;
+	int w = width();
+	int h = height();
+	float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / w;
+	float y = m_displayView.m_yMin + (m_displayView.m_height * (h - mouseY)) / h;
 	m_displayView.m_totalZoomExponent -= rel(1) * m_displayView.s_wheelFactor;
 	m_displayView.m_width = m_displayView.m_initialWidth * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
 	m_displayView.m_height = m_displayView.m_initialHeight * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
-	m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / nx;
-	m_displayView.m_yMin = y - (m_displayView.m_height * (ny - mouseY)) / ny;
+	m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / w;
+	m_displayView.m_yMin = y - (m_displayView.m_height * (h - mouseY)) / h;
 
 	setCamera();
 
@@ -500,3 +542,35 @@ bool GuiWindow::scrollEvent(const Vector2i &p, const Vector2f &rel)
 	return true;
 }
 
+bool GuiWindow::mouseClickEvent(const Eigen::Vector2i &p, int button, int modifiers)
+{
+//	cout << "Entering GuiWindow::mouseClickEvent(p = " << p << ", button = " << button << ", modifiers = " << modifiers << ")" << endl;
+
+	switch(button)
+	{
+	case GLFW_MOUSE_BUTTON_2:
+		m_displayView.m_xMin = -0.5f * m_displayView.m_width;
+		m_displayView.m_yMin = -0.5f * m_displayView.m_height;
+		setCamera();
+		break;
+	case GLFW_MOUSE_BUTTON_3:
+		{
+			int w = width();
+			int h = height();
+			int mouseX = p(0);
+			int mouseY = p(1);
+			float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / w;
+			float y = m_displayView.m_yMin + (m_displayView.m_height * (h - mouseY)) / h;
+			m_displayView.m_totalZoomExponent = 0;
+			m_displayView.m_width = m_displayView.m_initialWidth;
+			m_displayView.m_height = m_displayView.m_initialHeight;
+			m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / w;
+			m_displayView.m_yMin = y - (m_displayView.m_height * (h - mouseY)) / h;
+			setCamera();
+			break;
+		}
+	}
+
+
+	return true;
+}
