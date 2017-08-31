@@ -9,13 +9,22 @@
 
 #include <string>
 
+#include <vector>
+#include <array>
+
 #include <memory>
+#include <cstdint>
 
 
-template<class T> class DeepImage;
+namespace nanogui
+{
+	class FormHelper;
+}
 
 namespace bcd
 {
+
+	template<class T> class DeepImage;
 
 	struct FilePathFormVariable
 	{
@@ -59,12 +68,41 @@ namespace bcd
 
 		void reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight);
 
+		void resetZoomAndRecenter();
+
 		void print();
 
 	};
 
 	class GuiWindow : public nanogui::Screen
 	{
+	public:
+		enum class EDisplayType
+		{
+			colorInput,
+			covTraceInput,
+			colorOutput
+		};
+		static const std::size_t nbOfDisplayTypes = 3;
+
+		enum class ETexture
+		{
+			colorInput,
+			covTraceInput,
+			colorOutput,
+			count
+		};
+
+		enum class EShaderProgram
+		{
+			empty,
+			colorImage,
+			colorImageTonemapped,
+			scalarImage,
+			count
+		};
+
+
 	public:
 
 		GuiWindow();
@@ -74,7 +112,6 @@ namespace bcd
 
 		virtual void drawContents();
 
-		void setCamera();
 
 //		bool cursorPosCallbackEvent(double x, double y);
 //		virtual bool mouseButtonEvent(int button, int action, int modifiers);
@@ -84,21 +121,34 @@ namespace bcd
 //		virtual bool scrollEvent(double x, double y);
 //		bool resizeCallbackEvent(int width, int height);
 
-		virtual bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers);
-		virtual bool mouseMotionEvent(const Eigen::Vector2i &p, const Eigen::Vector2i &rel, int button, int modifiers);
-		virtual bool mouseDragEvent(const Eigen::Vector2i &p, const Eigen::Vector2i &rel, int button, int modifiers);
-		virtual bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel);
+		virtual bool mouseButtonEvent(const Eigen::Vector2i &p, int button, bool down, int modifiers) override;
+		virtual bool mouseMotionEvent(const Eigen::Vector2i &p, const Eigen::Vector2i &rel, int button, int modifiers) override;
+		virtual bool mouseDragEvent(const Eigen::Vector2i &p, const Eigen::Vector2i &rel, int button, int modifiers) override;
+		virtual bool scrollEvent(const Eigen::Vector2i &p, const Eigen::Vector2f &rel) override;
+		virtual bool keyboardEvent(int key, int scancode, int action, int modifiers) override;
 
 		bool mouseClickEvent(const Eigen::Vector2i &p, int button, int modifiers);
 
 		bool m_mouseMovedBeforeButtonRelease;
 
 	private:
+		void buildParametersSubWindow();
+		void buildDisplaySubWindow();
 		void buildGui();
 		void initTextures();
 		void initOpenGL();
+		void setCamera();
+
+		bool isLoaded(EDisplayType i_displayType);
+
+		void previousDisplayType();
+		void nextDisplayType();
+		void onDisplayTypeChange();
 
 	private:
+
+		std::unique_ptr<nanogui::FormHelper> m_uFormHelper;
+
 		FilePathFormVariable m_colorInputFilePath;
 		FilePathFormVariable m_histInputFilePath;
 		FilePathFormVariable m_covInputFilePath;
@@ -124,10 +174,16 @@ namespace bcd
 
 
 		nanogui::GLShader m_shaderProgram;
+		std::array<nanogui::GLShader, std::size_t(EShaderProgram::count)> m_shaderPrograms;
 
-		std::array<GLuint, 1> m_textureIds;
+		std::array<GLuint, std::size_t(ETexture::count)> m_textureIds;
 
 		DisplayView m_displayView;
+
+		EDisplayType m_currentDisplayType;
+		EDisplayType m_lastDisplayType;
+		std::array<bool, nbOfDisplayTypes> m_displayTypeIsVisible;
+
 
 	};
 

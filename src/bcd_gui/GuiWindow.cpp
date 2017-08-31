@@ -114,13 +114,16 @@ GuiWindow::GuiWindow() :
 		4, // glMajor
 		1 // glMinor
 		),
+		m_uFormHelper(nullptr),
 		m_inputsAreLoaded(false),
 		m_nbOfScales(3),
 		m_uColorInputImage(new Deepimf()),
 		m_uNbOfSamplesInputImage(new Deepimf()),
 		m_uHistInputImage(new Deepimf()),
 		m_uCovInputImage(new Deepimf()),
-		m_uOutputImage(new Deepimf())
+		m_uOutputImage(new Deepimf()),
+		m_currentDisplayType(EDisplayType::colorInput),
+		m_lastDisplayType(EDisplayType::covTraceInput)
 {
 	m_denoiserInputs.m_pColors = m_uColorInputImage.get();
 	m_denoiserInputs.m_pHistograms = m_uHistInputImage.get();
@@ -128,6 +131,12 @@ GuiWindow::GuiWindow() :
 	m_denoiserInputs.m_pSampleCovariances = m_uCovInputImage.get();
 
 	m_denoiserOutputs.m_pDenoisedColors = m_uOutputImage.get();
+
+
+	for(size_t i = 0; i < nbOfDisplayTypes; ++i)
+		m_displayTypeIsVisible[i] = false;
+	m_displayTypeIsVisible[size_t(EDisplayType::colorInput)] = true;
+	m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)] = true;
 
 	cout << "GuiWindow constructed!" << endl;
 }
@@ -158,31 +167,30 @@ void GuiWindow::displayUntilClosed()
 	nanogui::mainloop();
 }
 
-void GuiWindow::buildGui()
+void GuiWindow::buildParametersSubWindow()
 {
-	FormHelper* pFormHelper = new FormHelper(this);
-	nanogui::ref<Window> window = pFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD Form");
+	nanogui::ref<Window> window = m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters");
 
-	pFormHelper->addGroup("Inputs");
-	auto inputColorWidget = pFormHelper->addVariable("Color image", m_colorInputFilePath);
-	auto inputHistWidget = pFormHelper->addVariable("Histogram image", m_histInputFilePath);
-	auto inputCovWidget = pFormHelper->addVariable("Covariance image", m_covInputFilePath);
+	m_uFormHelper->addGroup("Inputs");
+	auto inputColorWidget = m_uFormHelper->addVariable("Color image", m_colorInputFilePath);
+	auto inputHistWidget = m_uFormHelper->addVariable("Histogram image", m_histInputFilePath);
+	auto inputCovWidget = m_uFormHelper->addVariable("Covariance image", m_covInputFilePath);
 
-	pFormHelper->addGroup("Parameters");
-	pFormHelper->addVariable("Nb of scales", m_nbOfScales);
-	pFormHelper->addVariable("Hist distance threshold", m_denoiserParameters.m_histogramDistanceThreshold);
-	pFormHelper->addVariable("Use CUDA", m_denoiserParameters.m_useCuda);
-	pFormHelper->addVariable("Nb of cores used (0 = default)", m_denoiserParameters.m_nbOfCores);
-	pFormHelper->addVariable("Patch radius", m_denoiserParameters.m_patchRadius);
-	pFormHelper->addVariable("Search window radius", m_denoiserParameters.m_searchWindowRadius);
-	pFormHelper->addVariable("Random pixel order", m_denoiserParameters.m_useRandomPixelOrder);
-	pFormHelper->addVariable("Marked pixels skipping probability", m_denoiserParameters.m_markedPixelsSkippingProbability);
-	pFormHelper->addVariable("Min eigen value", m_denoiserParameters.m_minEigenValue);
+	m_uFormHelper->addGroup("Parameters");
+	m_uFormHelper->addVariable("Nb of scales", m_nbOfScales);
+	m_uFormHelper->addVariable("Hist distance threshold", m_denoiserParameters.m_histogramDistanceThreshold);
+	m_uFormHelper->addVariable("Use CUDA", m_denoiserParameters.m_useCuda);
+	m_uFormHelper->addVariable("Nb of cores used (0 = default)", m_denoiserParameters.m_nbOfCores);
+	m_uFormHelper->addVariable("Patch radius", m_denoiserParameters.m_patchRadius);
+	m_uFormHelper->addVariable("Search window radius", m_denoiserParameters.m_searchWindowRadius);
+	m_uFormHelper->addVariable("Random pixel order", m_denoiserParameters.m_useRandomPixelOrder);
+	m_uFormHelper->addVariable("Marked pixels skipping probability", m_denoiserParameters.m_markedPixelsSkippingProbability);
+	m_uFormHelper->addVariable("Min eigen value", m_denoiserParameters.m_minEigenValue);
 
-	pFormHelper->addGroup("Outputs");
-	auto outputFileWidget = pFormHelper->addVariable("Output file", m_outputFilePath);
+	m_uFormHelper->addGroup("Outputs");
+	auto outputFileWidget = m_uFormHelper->addVariable("Output file", m_outputFilePath);
 
-	auto denoiseButton = pFormHelper->addButton("Denoise",
+	auto denoiseButton = m_uFormHelper->addButton("Denoise",
 			[this]()
 			{
 				if(!ifstream(m_outputFilePath.m_filePath))
@@ -218,7 +226,7 @@ void GuiWindow::buildGui()
 			});
 //	denoiseButton->setEnabled(false);
 
-	performLayout();
+//	performLayout();
 	window->center();
 
 
@@ -306,6 +314,35 @@ void GuiWindow::buildGui()
 	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
 	outputFileWidget->callback();
 	// end of tmp adds to ease testing
+
+}
+
+void GuiWindow::buildDisplaySubWindow()
+{
+//	nanogui::ref<Window> window =
+	m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD display");
+
+	m_uFormHelper->addGroup("Current display");
+	m_uFormHelper->addButton("Previous", [this](){ previousDisplayType(); });
+	m_uFormHelper->addVariable("Display", m_currentDisplayType)
+			->setItems({ "color input", "trace of covariance input", "color output" });
+	m_uFormHelper->addButton("Next", [this](){ nextDisplayType(); });
+
+	m_uFormHelper->addGroup("Visibility of displays");
+	m_uFormHelper->addVariable("Input color", m_displayTypeIsVisible[size_t(EDisplayType::colorInput)]);
+	m_uFormHelper->addVariable("Input covariance", m_displayTypeIsVisible[size_t(EDisplayType::covTraceInput)]);
+	m_uFormHelper->addVariable("Output", m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)]);
+
+}
+
+void GuiWindow::buildGui()
+{
+	m_uFormHelper.reset(new FormHelper(this));
+
+	buildParametersSubWindow();
+	buildDisplaySubWindow();
+
+	performLayout();
 
 }
 
@@ -402,6 +439,9 @@ void GuiWindow::drawContents()
 {
 	using namespace nanogui;
 
+	if(m_currentDisplayType != m_lastDisplayType)
+		onDisplayTypeChange();
+
 	/* Draw the window contents using OpenGL */
 
 	for(int i = 0; i < m_textureIds.size(); ++i)
@@ -445,6 +485,42 @@ void GuiWindow::setCamera()
 	m_shaderProgram.setUniform("modelViewProj", mvp);
 }
 
+
+bool GuiWindow::isLoaded(EDisplayType i_displayType)
+{
+	switch(i_displayType)
+	{
+	case EDisplayType::colorInput: return m_uColorInputImage != nullptr;
+	case EDisplayType::covTraceInput: return m_uCovInputImage != nullptr;
+	case EDisplayType::colorOutput: return m_uOutputImage != nullptr;
+	}
+	return false;
+}
+
+void GuiWindow::previousDisplayType()
+{
+	size_t i0 = size_t(m_currentDisplayType);
+	size_t i = i0;
+	do i = (i == 0 ? nbOfDisplayTypes - 1 : i - 1); while(i != i0 && !m_displayTypeIsVisible[i]);
+	m_currentDisplayType = static_cast<EDisplayType>(i);
+}
+
+void GuiWindow::nextDisplayType()
+{
+	size_t i0 = size_t(m_currentDisplayType);
+	size_t i = i0;
+	do i = (i == nbOfDisplayTypes - 1 ? 0 : i + 1); while(i != i0 && !m_displayTypeIsVisible[i]);
+	m_currentDisplayType = static_cast<EDisplayType>(i);
+}
+
+
+void GuiWindow::onDisplayTypeChange()
+{
+	m_lastDisplayType = m_currentDisplayType;
+	m_uFormHelper->refresh();
+
+}
+
 void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight)
 {
 	m_initialWidth = 2.0f * float(windowWidth) / float(imageWidth);
@@ -453,6 +529,15 @@ void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int i
 	m_height = m_initialHeight;
 	m_xMin = -0.5f * m_initialWidth;
 	m_yMin = -0.5f * m_initialHeight;
+	m_totalZoomExponent = 0.f;
+}
+
+void DisplayView::resetZoomAndRecenter()
+{
+	m_width = m_initialWidth;
+	m_height = m_initialHeight;
+	m_xMin = -0.5f * m_width;
+	m_yMin = -0.5f * m_height;
 	m_totalZoomExponent = 0.f;
 }
 
@@ -487,7 +572,7 @@ bool GuiWindow::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int but
 	if(buttons)
 		m_mouseMovedBeforeButtonRelease = true;
 
-	if(buttons & (1 << GLFW_MOUSE_BUTTON_2))
+	if(buttons & ((1 << GLFW_MOUSE_BUTTON_2) | (1 << GLFW_MOUSE_BUTTON_3)))
 	{
 		m_displayView.m_xMin -= (m_displayView.m_width * float(rel(0))) / float(width());
 		m_displayView.m_yMin += (m_displayView.m_height * float(rel(1))) / float(height());
@@ -542,6 +627,37 @@ bool GuiWindow::scrollEvent(const Vector2i &p, const Vector2f &rel)
 	return true;
 }
 
+
+bool GuiWindow::keyboardEvent(int key, int scancode, int action, int modifiers)
+{
+//	cout << "Entering GuiWindow::keyboardEvent(key = " << key << ", scancode = " << scancode << ", action = " << action << ", modifiers = " << modifiers << ")" << endl;
+	if(Screen::keyboardEvent(key, scancode, action, modifiers))
+		return true;
+//	cout << "passed super call Widget::keyboardEvent" << endl;
+
+	if(action != GLFW_PRESS)
+		return false;
+
+	switch(key)
+	{
+	case GLFW_KEY_SPACE:
+		m_displayView.resetZoomAndRecenter();
+		setCamera();
+		return true;
+	case GLFW_KEY_ESCAPE:
+		setVisible(false);
+		return true;
+	case GLFW_KEY_UP:
+		previousDisplayType();
+		return true;
+	case GLFW_KEY_DOWN:
+		nextDisplayType();
+		return true;
+	}
+
+	return false;
+}
+
 bool GuiWindow::mouseClickEvent(const Eigen::Vector2i &p, int button, int modifiers)
 {
 //	cout << "Entering GuiWindow::mouseClickEvent(p = " << p << ", button = " << button << ", modifiers = " << modifiers << ")" << endl;
@@ -549,24 +665,24 @@ bool GuiWindow::mouseClickEvent(const Eigen::Vector2i &p, int button, int modifi
 	switch(button)
 	{
 	case GLFW_MOUSE_BUTTON_2:
-		m_displayView.m_xMin = -0.5f * m_displayView.m_width;
-		m_displayView.m_yMin = -0.5f * m_displayView.m_height;
-		setCamera();
+//		m_displayView.m_xMin = -0.5f * m_displayView.m_width;
+//		m_displayView.m_yMin = -0.5f * m_displayView.m_height;
+//		setCamera();
 		break;
 	case GLFW_MOUSE_BUTTON_3:
 		{
-			int w = width();
-			int h = height();
-			int mouseX = p(0);
-			int mouseY = p(1);
-			float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / w;
-			float y = m_displayView.m_yMin + (m_displayView.m_height * (h - mouseY)) / h;
-			m_displayView.m_totalZoomExponent = 0;
-			m_displayView.m_width = m_displayView.m_initialWidth;
-			m_displayView.m_height = m_displayView.m_initialHeight;
-			m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / w;
-			m_displayView.m_yMin = y - (m_displayView.m_height * (h - mouseY)) / h;
-			setCamera();
+//			int w = width();
+//			int h = height();
+//			int mouseX = p(0);
+//			int mouseY = p(1);
+//			float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / w;
+//			float y = m_displayView.m_yMin + (m_displayView.m_height * (h - mouseY)) / h;
+//			m_displayView.m_totalZoomExponent = 0;
+//			m_displayView.m_width = m_displayView.m_initialWidth;
+//			m_displayView.m_height = m_displayView.m_initialHeight;
+//			m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / w;
+//			m_displayView.m_yMin = y - (m_displayView.m_height * (h - mouseY)) / h;
+//			setCamera();
 			break;
 		}
 	}
