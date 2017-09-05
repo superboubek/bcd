@@ -43,7 +43,8 @@ namespace bcd
 	};
 
 
-	struct DisplayView
+	/// @brief Position and size of the viewing frame in view space
+	struct ViewFrame
 	{
 		float m_initialWidth;
 		float m_initialHeight;
@@ -56,7 +57,7 @@ namespace bcd
 		static const float s_zoomFactor;
 		static const float s_wheelFactor;
 
-		DisplayView() :
+		ViewFrame() :
 				m_initialWidth(2.f),
 				m_initialHeight(2.f),
 				m_width(2.f),
@@ -66,9 +67,10 @@ namespace bcd
 				m_totalZoomExponent(0.f)
 		{}
 
-		void reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight);
-
+		void reset(int i_windowWidth, int i_windowHeight, int i_imageWidth, int i_imageHeight);
 		void resetZoomAndRecenter();
+		void changeResolution(int i_windowWidth, int i_windowHeight, int i_imageWidth, int i_imageHeight);
+		void zoom(int i_windowWidth, int i_windowHeight, int i_targetPixelX, int i_targetPixelY, float i_zoomWheelIncrease);
 
 		void print();
 
@@ -81,9 +83,9 @@ namespace bcd
 		{
 			colorInput,
 			covTraceInput,
-			colorOutput
+			colorOutput,
+			count
 		};
-		static const std::size_t nbOfDisplayTypes = 3;
 
 		enum class ETexture
 		{
@@ -99,6 +101,7 @@ namespace bcd
 			colorImage,
 			colorImageTonemapped,
 			scalarImage,
+			scalarImageTonemapped,
 			count
 		};
 
@@ -136,7 +139,15 @@ namespace bcd
 		void buildDisplaySubWindow();
 		void buildGui();
 		void initTextures();
+		void initShaders();
+
+		bool shaderNeedsTexture(EShaderProgram i_shaderProgram);
+
 		void initOpenGL();
+		EShaderProgram getShaderProgramFromDisplayType(EDisplayType i_displayType);
+		void setCurrentShaderProgram();
+		ETexture getTextureFromDisplayType(EDisplayType i_displayType);
+
 		void setCamera();
 
 		bool isLoaded(EDisplayType i_displayType);
@@ -170,19 +181,30 @@ namespace bcd
 		std::unique_ptr< DeepImage<float> > m_uNbOfSamplesInputImage;
 		std::unique_ptr< DeepImage<float> > m_uHistInputImage;
 		std::unique_ptr< DeepImage<float> > m_uCovInputImage;
+		std::unique_ptr< DeepImage<float> > m_uCovTraceInputImage;
 		std::unique_ptr< DeepImage<float> > m_uOutputImage;
 
 
-		nanogui::GLShader m_shaderProgram;
 		std::array<nanogui::GLShader, std::size_t(EShaderProgram::count)> m_shaderPrograms;
+		EShaderProgram m_currentShaderProgramType;
+		nanogui::GLShader* m_pCurrentShaderProgram;
 
 		std::array<GLuint, std::size_t(ETexture::count)> m_textureIds;
 
-		DisplayView m_displayView;
+		ViewFrame m_viewFrame;
 
+		EDisplayType m_oldDisplayType;
 		EDisplayType m_currentDisplayType;
-		EDisplayType m_lastDisplayType;
-		std::array<bool, nbOfDisplayTypes> m_displayTypeIsVisible;
+
+		bool m_displayChanged;
+		bool m_viewChanged;
+
+		std::array<bool, size_t(EDisplayType::count)> m_displayTypeIsVisible;
+		float m_gamma;
+		float m_exposure;
+		float m_covTraceScale;
+
+
 
 
 	};

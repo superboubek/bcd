@@ -12,6 +12,7 @@
 #include "CudaHistogramDistance.h"
 #endif
 
+#include "CovarianceMatrix.h"
 #include "ImageIO.h"
 #include "DeepImage.h"
 
@@ -37,8 +38,8 @@ using namespace bcd;
 using json = nlohmann::json;
 
 
-const float DisplayView::s_zoomFactor = 1.08f;
-const float DisplayView::s_wheelFactor = 1.f;
+const float ViewFrame::s_zoomFactor = 1.08f;
+const float ViewFrame::s_wheelFactor = 1.f;
 
 
 NAMESPACE_BEGIN(nanogui)
@@ -121,9 +122,17 @@ GuiWindow::GuiWindow() :
 		m_uNbOfSamplesInputImage(new Deepimf()),
 		m_uHistInputImage(new Deepimf()),
 		m_uCovInputImage(new Deepimf()),
+		m_uCovTraceInputImage(new Deepimf()),
 		m_uOutputImage(new Deepimf()),
+		m_currentShaderProgramType(EShaderProgram::empty),
+		m_pCurrentShaderProgram(nullptr),
+		m_oldDisplayType(EDisplayType::count),
 		m_currentDisplayType(EDisplayType::colorInput),
-		m_lastDisplayType(EDisplayType::covTraceInput)
+		m_displayChanged(true),
+		m_viewChanged(true),
+		m_gamma(2.2f),
+		m_exposure(1.f),
+		m_covTraceScale(1.f)
 {
 	m_denoiserInputs.m_pColors = m_uColorInputImage.get();
 	m_denoiserInputs.m_pHistograms = m_uHistInputImage.get();
@@ -133,10 +142,12 @@ GuiWindow::GuiWindow() :
 	m_denoiserOutputs.m_pDenoisedColors = m_uOutputImage.get();
 
 
-	for(size_t i = 0; i < nbOfDisplayTypes; ++i)
+	for(size_t i = 0; i < size_t(EDisplayType::count); ++i)
 		m_displayTypeIsVisible[i] = false;
 	m_displayTypeIsVisible[size_t(EDisplayType::colorInput)] = true;
 	m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)] = true;
+
+	m_viewFrame.reset(width(), height(), 512, 512);
 
 	cout << "GuiWindow constructed!" << endl;
 }
@@ -200,8 +211,7 @@ void GuiWindow::buildParametersSubWindow()
 						return;
 					}
 
-				Deepimf outputDenoisedColorImage(*m_denoiserInputs.m_pColors);
-				m_denoiserOutputs.m_pDenoisedColors = &outputDenoisedColorImage;
+				*m_uOutputImage = *m_uColorInputImage;
 
 				unique_ptr<IDenoiser> uDenoiser = nullptr;
 
@@ -218,7 +228,16 @@ void GuiWindow::buildParametersSubWindow()
 
 //				checkAndPutToZeroNegativeInfNaNValues(outputDenoisedColorImage); // TODO: put in utils?
 
-				ImageIO::writeEXR(outputDenoisedColorImage, m_outputFilePath.m_filePath.c_str());
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorOutput)]);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+						m_uOutputImage->getWidth(),
+						m_uOutputImage->getHeight(),
+						0, GL_RGB, GL_FLOAT,
+						m_uOutputImage->getDataPtr());
+				m_displayChanged = true;
+
+				ImageIO::writeEXR(*m_uOutputImage, m_outputFilePath.m_filePath.c_str());
 				cout << "Written denoised output in file " << m_outputFilePath.m_filePath.c_str() << endl;
 
 
@@ -247,15 +266,14 @@ void GuiWindow::buildParametersSubWindow()
 					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
 
 					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, m_textureIds[0]);
+					glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorInput)]);
 					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
 							m_uColorInputImage->getWidth(),
 							m_uColorInputImage->getHeight(),
 							0, GL_RGB, GL_FLOAT,
 							m_uColorInputImage->getDataPtr());
+					m_displayChanged = true;
 
-					m_displayView.reset(width(), height(), m_uColorInputImage->getWidth(), m_uColorInputImage->getHeight());
-					setCamera();
 				}
 				else
 					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
@@ -298,7 +316,32 @@ void GuiWindow::buildParametersSubWindow()
 				m_covInputFilePath = i_rFilePath;
 				cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
 				if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
+				{
 					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+
+					// TODO: cov trace computation and texture
+					int w = m_uCovInputImage->getWidth();
+					int h = m_uCovInputImage->getHeight();
+					m_uCovTraceInputImage->resize(w, h, 1);
+					auto covIt = m_uCovInputImage->begin();
+					auto covItEnd = m_uCovInputImage->end();
+					auto covTraceIt = m_uCovTraceInputImage->begin();
+					for(; covIt != covItEnd; ++covIt, ++covTraceIt)
+						covTraceIt[0] = sqrt(
+								covIt[int(ESymmetricMatrix3x3Data::e_xx)] +
+								covIt[int(ESymmetricMatrix3x3Data::e_yy)] +
+								covIt[int(ESymmetricMatrix3x3Data::e_zz)]);
+
+					glActiveTexture(GL_TEXTURE0);
+					glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::covTraceInput)]);
+					glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
+							m_uCovTraceInputImage->getWidth(),
+							m_uCovTraceInputImage->getHeight(),
+							0, GL_RED, GL_FLOAT,
+							m_uCovTraceInputImage->getDataPtr());
+					m_displayChanged = true;
+
+				}
 				else
 					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
 			}
@@ -333,6 +376,11 @@ void GuiWindow::buildDisplaySubWindow()
 	m_uFormHelper->addVariable("Input covariance", m_displayTypeIsVisible[size_t(EDisplayType::covTraceInput)]);
 	m_uFormHelper->addVariable("Output", m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)]);
 
+	m_uFormHelper->addGroup("Viewing parameters");
+	m_uFormHelper->addVariable("Gamma", m_gamma);
+	m_uFormHelper->addVariable("Exposure", m_exposure);
+	m_uFormHelper->addVariable("Covariance scale", m_covTraceScale);
+
 }
 
 void GuiWindow::buildGui()
@@ -365,46 +413,124 @@ void GuiWindow::initTextures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
-				GL_RGB, GL_FLOAT, defaultData.data());
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0,
+//				GL_RGB, GL_FLOAT, defaultData.data());
+	}
+}
+
+void GuiWindow::initShaders()
+{
+	string vsWithoutUVs = R"(
+#version 330
+uniform mat4 modelViewProj;
+in vec3 position;
+void main()
+{
+	gl_Position = modelViewProj * vec4(position, 1.0);
+}
+			)";
+
+	string vsWithUVs = R"(
+#version 330
+uniform mat4 modelViewProj;
+in vec3 position;
+in vec2 vertexTexCoords;
+out vec2 texCoords;
+void main()
+{
+	gl_Position = modelViewProj * vec4(position, 1.0);
+	texCoords = vertexTexCoords;
+}
+			)";
+
+	string fsEmpty = R"(
+#version 330
+out vec4 color;
+void main()
+{
+	color = vec4(0.0, 0.0, 0.0, 1.0);
+}
+			)";
+
+	string fsColor = R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform sampler2D textureSampler;
+void main()
+{
+	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);
+//	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
+}
+			)";
+
+	string fsColorTonemapped = R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform sampler2D textureSampler;
+uniform float gamma = 2.2;
+uniform float exposure = 1.0;
+void main()
+{
+	color = vec4(exposure * pow(texture(textureSampler, texCoords).rgb, vec3(1.0, 1.0, 1.0) / gamma), 1.0);
+}
+			)";
+
+	string fsScalar = R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform sampler2D textureSampler;
+void main()
+{
+	float scalar = texture(textureSampler, texCoords).r;
+	color = vec4(scalar, scalar, scalar, 1.0);
+}
+			)";
+
+	string fsScalarTonemapped = R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform sampler2D textureSampler;
+uniform float gamma = 2.2;
+uniform float exposure = 1.0;
+void main()
+{
+	float scalar = exposure * pow(texture(textureSampler, texCoords).r, 1.0 / gamma);
+	color = vec4(scalar, scalar, scalar, 1.0);
+}
+			)";
+
+	m_shaderPrograms[size_t(EShaderProgram::empty)].init("empty", vsWithoutUVs, fsEmpty);
+	m_shaderPrograms[size_t(EShaderProgram::colorImage)].init("color image", vsWithUVs, fsColor);
+	m_shaderPrograms[size_t(EShaderProgram::colorImageTonemapped)].init("color image with tone mapping", vsWithUVs, fsColorTonemapped);
+	m_shaderPrograms[size_t(EShaderProgram::scalarImage)].init("scalar image", vsWithUVs, fsScalar);
+	m_shaderPrograms[size_t(EShaderProgram::scalarImageTonemapped)].init("scalar image", vsWithUVs, fsScalarTonemapped);
+
+}
+
+bool GuiWindow::shaderNeedsTexture(EShaderProgram i_shaderProgram)
+{
+	assert(i_shaderProgram != EShaderProgram::count);
+	switch(i_shaderProgram)
+	{
+	case EShaderProgram::empty:
+		return false;
+	default:
+		return true;
 	}
 }
 
 void GuiWindow::initOpenGL()
 {
 
+
 	// glEnable(GL_TEXTURE_2D);
 
 	initTextures();
-	m_shaderProgram.init(
-			"simple_image_viewer",
-
-			// Vertex shader
-			R"(
-#version 330
-uniform mat4 modelViewProj;
-in vec3 position;
-in vec2 vertexTexCoords;
-out vec2 texCoords;
-void main() {
-	gl_Position = modelViewProj * vec4(position, 1.0);
-	texCoords = vertexTexCoords;
-}
-			)",
-
-			// Fragment shader
-			R"(
-#version 330
-in vec2 texCoords;
-out vec4 color;
-uniform float intensity;
-uniform sampler2D textureSampler;
-void main() {
-	color = vec4(texture(textureSampler, texCoords).rgb, 1.0);
-//	color = vec4(texCoords.x, 0, texCoords.y, 1.0);\n"
-}
-			)"
-			);
+	initShaders();
 
 	MatrixXu indices(3, 2); /* Draw 2 triangles */
 	indices.col(0) << 0, 1, 2;
@@ -422,67 +548,143 @@ void main() {
 	vertexTexCoords.col(2) << 1, 0;
 	vertexTexCoords.col(3) << 0, 0;
 
-	m_shaderProgram.bind();
-	m_shaderProgram.uploadIndices(indices);
-	m_shaderProgram.uploadAttrib("position", positions);
-	m_shaderProgram.uploadAttrib("vertexTexCoords", vertexTexCoords);
+	for(size_t i = 0; i < m_shaderPrograms.size(); ++i)
+	{
+		GLShader& rShaderProgram = m_shaderPrograms[i];
+		rShaderProgram.bind();
+		rShaderProgram.uploadIndices(indices);
+		rShaderProgram.uploadAttrib("position", positions);
+		if(shaderNeedsTexture(EShaderProgram(i)))
+		{
+			rShaderProgram.uploadAttrib("vertexTexCoords", vertexTexCoords);
+			rShaderProgram.setUniform("textureSampler", GLuint(0));
+		}
+	}
 
+}
 
-//	m_shaderProgram.setUniform("intensity", 0.5f);
-	m_shaderProgram.setUniform("textureSampler", GLuint(0)); // TODO: replace this 0 by a variable?
-//	glUniform1i(m_shaderProgram.uniform("textureSampler"), 0);
+GuiWindow::EShaderProgram GuiWindow::getShaderProgramFromDisplayType(EDisplayType i_displayType)
+{
+	switch (i_displayType)
+	{
+	case EDisplayType::colorInput: return EShaderProgram::colorImageTonemapped;
+	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageTonemapped;
+	case EDisplayType::colorOutput: return EShaderProgram::colorImageTonemapped;
+	default:
+		assert(false);
+		return EShaderProgram::empty;
+	}
+}
 
-	setCamera();
+void GuiWindow::setCurrentShaderProgram()
+{
+	if(!isLoaded(m_currentDisplayType))
+		m_currentShaderProgramType = EShaderProgram::empty;
+	else
+		m_currentShaderProgramType = getShaderProgramFromDisplayType(m_currentDisplayType);
+	m_pCurrentShaderProgram = &m_shaderPrograms[size_t(m_currentShaderProgramType)];
+}
+
+GuiWindow::ETexture GuiWindow::getTextureFromDisplayType(EDisplayType i_displayType)
+{
+	switch (i_displayType)
+	{
+	case EDisplayType::colorInput: return ETexture::colorInput;
+	case EDisplayType::covTraceInput: return ETexture::covTraceInput;
+	case EDisplayType::colorOutput: return ETexture::colorOutput;
+	default:
+		assert(false);
+		return ETexture::colorInput;
+	}
+}
+
+void GuiWindow::onDisplayTypeChange()
+{
+	m_uFormHelper->refresh();
+
+	setCurrentShaderProgram();
+
+	const DeepImage<float>* pCurrentImage = nullptr;
+	switch(m_currentDisplayType)
+	{
+	case EDisplayType::colorInput:
+		pCurrentImage = m_uColorInputImage.get();
+		break;
+	case EDisplayType::covTraceInput:
+		pCurrentImage = m_uCovTraceInputImage.get();
+		break;
+	case EDisplayType::colorOutput:
+		pCurrentImage = m_uOutputImage.get();
+		break;
+	default:
+		assert(false);
+		break;
+	}
+
+	if(!pCurrentImage->isEmpty())
+	{
+		m_viewFrame.changeResolution(width(), height(), pCurrentImage->getWidth(), pCurrentImage->getHeight());
+		m_viewChanged = true;
+	}
+
 }
 
 void GuiWindow::drawContents()
 {
-	using namespace nanogui;
+	if(m_currentDisplayType != m_oldDisplayType)
+		m_displayChanged = true;
 
-	if(m_currentDisplayType != m_lastDisplayType)
+	if(m_displayChanged) // m_displayChanged can also be set to true when an image is loaded for example
 		onDisplayTypeChange();
 
-	/* Draw the window contents using OpenGL */
+	m_pCurrentShaderProgram->bind();
 
-	for(int i = 0; i < m_textureIds.size(); ++i)
+	if(shaderNeedsTexture(m_currentShaderProgramType))
 	{
-		glActiveTexture(GL_TEXTURE0 + i);
-		glBindTexture(GL_TEXTURE_2D, m_textureIds[i]);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(getTextureFromDisplayType(m_currentDisplayType))]);
 	}
-	m_shaderProgram.bind();
 
-//	Matrix4f mvp;
-//	mvp.setIdentity();
-//	Eigen::Matrix4f
-//	mvp.topLeftCorner<3,3>() = Matrix3f(Eigen::AngleAxisf((float) glfwGetTime(),  Vector3f::UnitZ())) * 0.25f;
-//
-//	mvp.row(0) *= (float) mSize.y() / (float) mSize.x();
-//
-//	m_shaderProgram.setUniform("modelViewProj", mvp);
+	if(m_viewChanged)
+		setCamera();
 
-	/* Draw 2 triangles starting at index 0 */
-	m_shaderProgram.drawIndexed(GL_TRIANGLES, 0, 2);
+	switch(m_currentShaderProgramType)
+	{
+	case EShaderProgram::colorImageTonemapped:
+		m_pCurrentShaderProgram->setUniform("gamma", m_gamma);
+		m_pCurrentShaderProgram->setUniform("exposure", m_exposure);
+		break;
+	case EShaderProgram::scalarImageTonemapped:
+		m_pCurrentShaderProgram->setUniform("gamma", m_gamma);
+		m_pCurrentShaderProgram->setUniform("exposure", m_exposure * m_covTraceScale);
+		break;
+	}
+
+	if(m_currentShaderProgramType != EShaderProgram::empty)
+		m_pCurrentShaderProgram->drawIndexed(GL_TRIANGLES, 0, 2);
+
+	m_displayChanged = false;
+	m_viewChanged = false;
 }
 
 
 void GuiWindow::setCamera()
 {
-//	m_displayView.print();
+//	m_viewFrame.print();
 
 	Eigen::Matrix4f mvp;
 	mvp.setIdentity();
-	float zoomFactorX = 2.f / m_displayView.m_width;
-	float zoomFactorY = 2.f / m_displayView.m_height;
-	float dx = -1 - m_displayView.m_xMin * zoomFactorX;
-	float dy = -1 - m_displayView.m_yMin * zoomFactorY;
+	float zoomFactorX = 2.f / m_viewFrame.m_width;
+	float zoomFactorY = 2.f / m_viewFrame.m_height;
+	float dx = -1 - m_viewFrame.m_xMin * zoomFactorX;
+	float dy = -1 - m_viewFrame.m_yMin * zoomFactorY;
 
 	mvp(0,0) = zoomFactorX;
 	mvp(1,1) = zoomFactorY;
 	mvp(0,3) = dx;
 	mvp(1,3) = dy;
 
-	m_shaderProgram.bind();
-	m_shaderProgram.setUniform("modelViewProj", mvp);
+	m_pCurrentShaderProgram->setUniform("modelViewProj", mvp);
 }
 
 
@@ -490,9 +692,9 @@ bool GuiWindow::isLoaded(EDisplayType i_displayType)
 {
 	switch(i_displayType)
 	{
-	case EDisplayType::colorInput: return m_uColorInputImage != nullptr;
-	case EDisplayType::covTraceInput: return m_uCovInputImage != nullptr;
-	case EDisplayType::colorOutput: return m_uOutputImage != nullptr;
+	case EDisplayType::colorInput: return !m_uColorInputImage->isEmpty();
+	case EDisplayType::covTraceInput: return !m_uCovInputImage->isEmpty();
+	case EDisplayType::colorOutput: return !m_uOutputImage->isEmpty();
 	}
 	return false;
 }
@@ -501,7 +703,7 @@ void GuiWindow::previousDisplayType()
 {
 	size_t i0 = size_t(m_currentDisplayType);
 	size_t i = i0;
-	do i = (i == 0 ? nbOfDisplayTypes - 1 : i - 1); while(i != i0 && !m_displayTypeIsVisible[i]);
+	do i = (i == 0 ? size_t(EDisplayType::count) - 1 : i - 1); while(i != i0 && !m_displayTypeIsVisible[i]);
 	m_currentDisplayType = static_cast<EDisplayType>(i);
 }
 
@@ -509,22 +711,15 @@ void GuiWindow::nextDisplayType()
 {
 	size_t i0 = size_t(m_currentDisplayType);
 	size_t i = i0;
-	do i = (i == nbOfDisplayTypes - 1 ? 0 : i + 1); while(i != i0 && !m_displayTypeIsVisible[i]);
+	do i = (i == size_t(EDisplayType::count) - 1 ? 0 : i + 1); while(i != i0 && !m_displayTypeIsVisible[i]);
 	m_currentDisplayType = static_cast<EDisplayType>(i);
 }
 
 
-void GuiWindow::onDisplayTypeChange()
+void ViewFrame::reset(int i_windowWidth, int i_windowHeight, int i_imageWidth, int i_imageHeight)
 {
-	m_lastDisplayType = m_currentDisplayType;
-	m_uFormHelper->refresh();
-
-}
-
-void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int imageHeight)
-{
-	m_initialWidth = 2.0f * float(windowWidth) / float(imageWidth);
-	m_initialHeight = 2.0f * float(windowHeight) / float(imageHeight);
+	m_initialWidth = 2.0f * float(i_windowWidth) / float(i_imageWidth);
+	m_initialHeight = 2.0f * float(i_windowHeight) / float(i_imageHeight);
 	m_width = m_initialWidth;
 	m_height = m_initialHeight;
 	m_xMin = -0.5f * m_initialWidth;
@@ -532,7 +727,7 @@ void DisplayView::reset(int windowWidth, int windowHeight, int imageWidth, int i
 	m_totalZoomExponent = 0.f;
 }
 
-void DisplayView::resetZoomAndRecenter()
+void ViewFrame::resetZoomAndRecenter()
 {
 	m_width = m_initialWidth;
 	m_height = m_initialHeight;
@@ -541,7 +736,31 @@ void DisplayView::resetZoomAndRecenter()
 	m_totalZoomExponent = 0.f;
 }
 
-void DisplayView::print()
+void ViewFrame::changeResolution(int i_windowWidth, int i_windowHeight, int i_imageWidth, int i_imageHeight)
+{
+	float xCenter = m_xMin + 0.5f * m_width;
+	float yCenter = m_yMin + 0.5f * m_height;
+
+	m_initialWidth = 2.0f * float(i_windowWidth) / float(i_imageWidth);
+	m_initialHeight = 2.0f * float(i_windowHeight) / float(i_imageHeight);
+	m_width = m_initialWidth * pow(s_zoomFactor, m_totalZoomExponent);
+	m_height = m_initialHeight * pow(s_zoomFactor, m_totalZoomExponent);
+	m_xMin = xCenter - 0.5f * m_width;
+	m_yMin = yCenter - 0.5f * m_height;
+}
+
+void ViewFrame::zoom(int i_windowWidth, int i_windowHeight, int i_targetPixelX, int i_targetPixelY, float i_zoomWheelIncrease)
+{
+	float x = m_xMin + (m_width * i_targetPixelX) / i_windowWidth;
+	float y = m_yMin + (m_height * (i_windowHeight - i_targetPixelY)) / i_windowHeight;
+	m_totalZoomExponent -= i_zoomWheelIncrease * s_wheelFactor;
+	m_width = m_initialWidth * pow(s_zoomFactor, m_totalZoomExponent);
+	m_height = m_initialHeight * pow(s_zoomFactor, m_totalZoomExponent);
+	m_xMin = x - (m_width * i_targetPixelX) / i_windowWidth;
+	m_yMin = y - (m_height * (i_windowHeight - i_targetPixelY)) / i_windowHeight;
+}
+
+void ViewFrame::print()
 {
 	cout << "viewport (x,y) in [" << m_xMin << ", " << m_xMin + m_width << "] x [" << m_yMin << ", " << m_yMin + m_height << "]" << endl;
 }
@@ -574,9 +793,9 @@ bool GuiWindow::mouseMotionEvent(const Vector2i &p, const Vector2i &rel, int but
 
 	if(buttons & ((1 << GLFW_MOUSE_BUTTON_2) | (1 << GLFW_MOUSE_BUTTON_3)))
 	{
-		m_displayView.m_xMin -= (m_displayView.m_width * float(rel(0))) / float(width());
-		m_displayView.m_yMin += (m_displayView.m_height * float(rel(1))) / float(height());
-		setCamera();
+		m_viewFrame.m_xMin -= (m_viewFrame.m_width * float(rel(0))) / float(width());
+		m_viewFrame.m_yMin += (m_viewFrame.m_height * float(rel(1))) / float(height());
+		m_viewChanged = true;
 	}
 
 	return true;
@@ -604,22 +823,8 @@ bool GuiWindow::scrollEvent(const Vector2i &p, const Vector2f &rel)
 		return true;
 //	cout << "passed super call Widget::scrollEvent" << endl;
 
-	int mouseX = p(0);
-	int mouseY = p(1);
-
-//	cout << "mouse (x,y) = (" << mouseX << ", " << mouseY << ")" << endl;
-
-	int w = width();
-	int h = height();
-	float x = m_displayView.m_xMin + (m_displayView.m_width * mouseX) / w;
-	float y = m_displayView.m_yMin + (m_displayView.m_height * (h - mouseY)) / h;
-	m_displayView.m_totalZoomExponent -= rel(1) * m_displayView.s_wheelFactor;
-	m_displayView.m_width = m_displayView.m_initialWidth * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
-	m_displayView.m_height = m_displayView.m_initialHeight * pow(m_displayView.s_zoomFactor, m_displayView.m_totalZoomExponent);
-	m_displayView.m_xMin = x - (m_displayView.m_width * mouseX) / w;
-	m_displayView.m_yMin = y - (m_displayView.m_height * (h - mouseY)) / h;
-
-	setCamera();
+	m_viewFrame.zoom(width(), height(), p(0), p(1), rel(1));
+	m_viewChanged = true;
 
 //	update();
 
@@ -641,8 +846,8 @@ bool GuiWindow::keyboardEvent(int key, int scancode, int action, int modifiers)
 	switch(key)
 	{
 	case GLFW_KEY_SPACE:
-		m_displayView.resetZoomAndRecenter();
-		setCamera();
+		m_viewFrame.resetZoomAndRecenter();
+		m_viewChanged = true;
 		return true;
 	case GLFW_KEY_ESCAPE:
 		setVisible(false);
