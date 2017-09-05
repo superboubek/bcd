@@ -102,6 +102,7 @@ namespace bcd
 			colorImageTonemapped,
 			scalarImage,
 			scalarImageTonemapped,
+			scalarImageHelix,
 			count
 		};
 
@@ -203,6 +204,21 @@ namespace bcd
 		float m_gamma;
 		float m_exposure;
 		float m_covTraceScale;
+
+		struct HelixColorMapParameters
+		{
+			float m_maxValue;
+			float m_start;
+			float m_rotations;
+			float m_hue;
+			float m_gamma;
+			HelixColorMapParameters() :
+					m_maxValue(1.f),
+					m_start(0.5f),
+					m_rotations(-1.5f),
+					m_hue(1.f),
+					m_gamma(1.f) {}
+		} m_helix;
 
 
 

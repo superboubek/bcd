@@ -143,9 +143,7 @@ GuiWindow::GuiWindow() :
 
 
 	for(size_t i = 0; i < size_t(EDisplayType::count); ++i)
-		m_displayTypeIsVisible[i] = false;
-	m_displayTypeIsVisible[size_t(EDisplayType::colorInput)] = true;
-	m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)] = true;
+		m_displayTypeIsVisible[i] = true;
 
 	m_viewFrame.reset(width(), height(), 512, 512);
 
@@ -376,10 +374,17 @@ void GuiWindow::buildDisplaySubWindow()
 	m_uFormHelper->addVariable("Input covariance", m_displayTypeIsVisible[size_t(EDisplayType::covTraceInput)]);
 	m_uFormHelper->addVariable("Output", m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)]);
 
-	m_uFormHelper->addGroup("Viewing parameters");
+	m_uFormHelper->addGroup("Tonemapping parameters");
 	m_uFormHelper->addVariable("Gamma", m_gamma);
 	m_uFormHelper->addVariable("Exposure", m_exposure);
 	m_uFormHelper->addVariable("Covariance scale", m_covTraceScale);
+
+	m_uFormHelper->addGroup("Helix color map parameters");
+	m_uFormHelper->addVariable("Max value", m_helix.m_maxValue);
+	m_uFormHelper->addVariable("Start", m_helix.m_start);
+	m_uFormHelper->addVariable("Rotations", m_helix.m_rotations);
+	m_uFormHelper->addVariable("Hue", m_helix.m_hue);
+	m_uFormHelper->addVariable("Gamma", m_helix.m_gamma);
 
 }
 
@@ -503,11 +508,41 @@ void main()
 }
 			)";
 
+	string fsScalarHelix = R"(
+#version 330
+in vec2 texCoords;
+out vec4 color;
+uniform sampler2D textureSampler;
+uniform float maxValue = 1.0;
+uniform float start = 0.5;
+uniform float rotations = -1.5;
+uniform float hue = 1.0;
+uniform float gamma = 1.0;
+void main()
+{
+	float scalar = min(1.0, texture(textureSampler, texCoords).r / maxValue);
+	float scalarGamma = pow(scalar, 1.0 / gamma);
+	float angle = 2.0 * 3.14159265359 * (start / 3.0 + rotations * scalar);
+	float cosangle = cos(angle);
+	float sinangle = sin(angle);
+	float amplitude = hue * scalarGamma * (1.0 - scalarGamma) * 0.5;
+	color = vec4(
+			scalarGamma * vec3(1.0, 1.0, 1.0) +
+			amplitude * vec3(
+					-0.14861 * cosangle + 1.78277 * sinangle,
+					-0.29227 * cosangle - 0.90649 * sinangle,
+					1.97294 * cosangle
+			),
+			1.0);
+}
+			)";
+
 	m_shaderPrograms[size_t(EShaderProgram::empty)].init("empty", vsWithoutUVs, fsEmpty);
 	m_shaderPrograms[size_t(EShaderProgram::colorImage)].init("color image", vsWithUVs, fsColor);
 	m_shaderPrograms[size_t(EShaderProgram::colorImageTonemapped)].init("color image with tone mapping", vsWithUVs, fsColorTonemapped);
 	m_shaderPrograms[size_t(EShaderProgram::scalarImage)].init("scalar image", vsWithUVs, fsScalar);
-	m_shaderPrograms[size_t(EShaderProgram::scalarImageTonemapped)].init("scalar image", vsWithUVs, fsScalarTonemapped);
+	m_shaderPrograms[size_t(EShaderProgram::scalarImageTonemapped)].init("scalar image with tone mapping", vsWithUVs, fsScalarTonemapped);
+	m_shaderPrograms[size_t(EShaderProgram::scalarImageHelix)].init("scalar image with helix color map", vsWithUVs, fsScalarHelix);
 
 }
 
@@ -568,7 +603,8 @@ GuiWindow::EShaderProgram GuiWindow::getShaderProgramFromDisplayType(EDisplayTyp
 	switch (i_displayType)
 	{
 	case EDisplayType::colorInput: return EShaderProgram::colorImageTonemapped;
-	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageTonemapped;
+//	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageTonemapped;
+	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageHelix;
 	case EDisplayType::colorOutput: return EShaderProgram::colorImageTonemapped;
 	default:
 		assert(false);
@@ -657,6 +693,13 @@ void GuiWindow::drawContents()
 	case EShaderProgram::scalarImageTonemapped:
 		m_pCurrentShaderProgram->setUniform("gamma", m_gamma);
 		m_pCurrentShaderProgram->setUniform("exposure", m_exposure * m_covTraceScale);
+		break;
+	case EShaderProgram::scalarImageHelix:
+		m_pCurrentShaderProgram->setUniform("maxValue", m_helix.m_maxValue);
+		m_pCurrentShaderProgram->setUniform("start", m_helix.m_start);
+		m_pCurrentShaderProgram->setUniform("rotations", m_helix.m_rotations);
+		m_pCurrentShaderProgram->setUniform("hue", m_helix.m_hue);
+		m_pCurrentShaderProgram->setUniform("gamma", m_helix.m_gamma);
 		break;
 	}
 
