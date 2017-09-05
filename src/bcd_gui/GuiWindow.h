@@ -217,7 +217,7 @@ namespace bcd
 					m_start(0.5f),
 					m_rotations(-1.5f),
 					m_hue(1.f),
-					m_gamma(1.f) {}
+					m_gamma(2.2f) {}
 		} m_helix;
 
 

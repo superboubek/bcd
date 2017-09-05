@@ -517,7 +517,8 @@ uniform float maxValue = 1.0;
 uniform float start = 0.5;
 uniform float rotations = -1.5;
 uniform float hue = 1.0;
-uniform float gamma = 1.0;
+uniform float gamma = 2.2;
+// see http://astron-soc.in/bulletin/11June/289392011.pdf
 void main()
 {
 	float scalar = min(1.0, texture(textureSampler, texCoords).r / maxValue);
