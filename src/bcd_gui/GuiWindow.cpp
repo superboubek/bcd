@@ -35,7 +35,7 @@
 using namespace std;
 using namespace nanogui;
 using namespace bcd;
-using json = nlohmann::json;
+using Json = nlohmann::json;
 
 
 const float ViewFrame::s_zoomFactor = 1.08f;
@@ -116,6 +116,11 @@ GuiWindow::GuiWindow() :
 		1 // glMinor
 		),
 		m_uFormHelper(nullptr),
+		m_uParametersSubWindow(nullptr),
+		m_uDisplaySubWindow(nullptr),
+		m_hideAllSubWindows(false),
+		m_loadSaveInputFiles(true),
+		m_loadSaveAlgoParams(true),
 		m_inputsAreLoaded(false),
 		m_nbOfScales(3),
 		m_uColorInputImage(new Deepimf()),
@@ -156,12 +161,13 @@ GuiWindow::~GuiWindow()
 
 void testJson()
 {
-	json j;
+	Json j;
 	j["pi"] = 3.141;
 	j["happy"] = true;
 	j["name"] = "Niels";
 
 	cout << setw(2) << j << endl;
+	cout << setw(6) << j << endl;
 }
 
 void GuiWindow::displayUntilClosed()
@@ -169,23 +175,250 @@ void GuiWindow::displayUntilClosed()
 	initOpenGL();
 	buildGui();
 
-//	testJson();
+	testJson();
 
 	setVisible(true);
 
 	nanogui::mainloop();
 }
 
+void GuiWindow::loadInputsAndParameters()
+{
+	string filePath = file_dialog({ { "bcd.json", "BCD Json file" } }, true);
+	if(filePath == "")
+		return;
+	ifstream file(filePath);
+	if(!file)
+	{
+		cerr << "Error: couldn't open file '" << filePath << "'" << endl;
+		return;
+	}
+	Json jsonObject;
+	file >> jsonObject;
+
+	Json::iterator it;
+	Json::iterator notFound = jsonObject.end();
+	if(m_loadSaveInputFiles)
+	{
+		string newFilePath;
+
+		it = jsonObject.find("inputColorFile");
+		if(it != notFound)
+		{
+			newFilePath = it.value();
+			loadInputColorFile(FilePathFormVariable(newFilePath));
+			m_colorInputFilePath.m_filePath = newFilePath;
+		}
+
+		it = jsonObject.find("inputHistoFile");
+		if(it != notFound)
+		{
+			newFilePath = it.value();
+			loadInputHistoFile(FilePathFormVariable(newFilePath));
+			m_histInputFilePath.m_filePath = newFilePath;
+		}
+
+		it = jsonObject.find("inputCovarFile");
+		if(it != notFound)
+		{
+			newFilePath = it.value();
+			loadInputCovarFile(FilePathFormVariable(newFilePath));
+			m_covInputFilePath.m_filePath = newFilePath;
+		}
+	}
+}
+
+void GuiWindow::saveInputsAndParameters()
+{
+	string filePath = file_dialog({ { "bcd.json", "BCD Json file" } }, true);
+	if(filePath == "")
+		return;
+	ofstream file(filePath);
+	if(!file)
+	{
+		cerr << "Error: couldn't write file '" << filePath << "'" << endl;
+		return;
+	}
+	Json jsonObject;
+	if(m_loadSaveInputFiles)
+	{
+		jsonObject["inputColorFile"] = m_colorInputFilePath.m_filePath;
+		jsonObject["inputHistoFile"] = m_histInputFilePath.m_filePath;
+		jsonObject["inputCovarFile"] = m_covInputFilePath.m_filePath;
+	}
+	if(m_loadSaveAlgoParams)
+	{
+
+	}
+	file << jsonObject.dump(4);
+}
+
+
+void GuiWindow::loadInputColorFile(const FilePathFormVariable& i_rFilePath)
+{
+	if(i_rFilePath == m_colorInputFilePath)
+		return;
+	if(!ifstream(i_rFilePath.m_filePath))
+	{
+		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		return;
+	}
+	m_colorInputFilePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
+	if(ImageIO::loadEXR(*m_uColorInputImage, i_rFilePath.m_filePath.c_str()))
+	{
+		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorInput)]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+				m_uColorInputImage->getWidth(),
+				m_uColorInputImage->getHeight(),
+				0, GL_RGB, GL_FLOAT,
+				m_uColorInputImage->getDataPtr());
+		m_displayChanged = true;
+
+	}
+	else
+		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+}
+
+void GuiWindow::loadInputHistoFile(const FilePathFormVariable& i_rFilePath)
+{
+	if(i_rFilePath == m_histInputFilePath)
+		return;
+	if(!ifstream(i_rFilePath.m_filePath))
+	{
+		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		return;
+	}
+	m_histInputFilePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
+	Deepimf histAndNbOfSamplesImage;
+	if(ImageIO::loadMultiChannelsEXR(histAndNbOfSamplesImage, i_rFilePath.m_filePath.c_str()))
+	{
+		Utils::separateNbOfSamplesFromHistogram(*m_uHistInputImage, *m_uNbOfSamplesInputImage, histAndNbOfSamplesImage);
+		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+	}
+	else
+		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+}
+
+void GuiWindow::loadInputCovarFile(const FilePathFormVariable& i_rFilePath)
+{
+	if(i_rFilePath == m_covInputFilePath)
+		return;
+	if(!ifstream(i_rFilePath.m_filePath))
+	{
+		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		return;
+	}
+	m_covInputFilePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
+	if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
+	{
+		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+
+		// TODO: cov trace computation and texture
+		int w = m_uCovInputImage->getWidth();
+		int h = m_uCovInputImage->getHeight();
+		m_uCovTraceInputImage->resize(w, h, 1);
+		auto covIt = m_uCovInputImage->begin();
+		auto covItEnd = m_uCovInputImage->end();
+		auto covTraceIt = m_uCovTraceInputImage->begin();
+		for(; covIt != covItEnd; ++covIt, ++covTraceIt)
+			covTraceIt[0] = sqrt(
+					covIt[int(ESymmetricMatrix3x3Data::e_xx)] +
+					covIt[int(ESymmetricMatrix3x3Data::e_yy)] +
+					covIt[int(ESymmetricMatrix3x3Data::e_zz)]);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::covTraceInput)]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
+				m_uCovTraceInputImage->getWidth(),
+				m_uCovTraceInputImage->getHeight(),
+				0, GL_RED, GL_FLOAT,
+				m_uCovTraceInputImage->getDataPtr());
+		m_displayChanged = true;
+
+	}
+	else
+		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+}
+
+
+void GuiWindow::denoise()
+{
+
+	*m_uOutputImage = *m_uColorInputImage;
+
+	unique_ptr<IDenoiser> uDenoiser = nullptr;
+
+	if(m_nbOfScales > 1)
+		uDenoiser.reset(new MultiscaleDenoiser(m_nbOfScales));
+	else
+		uDenoiser.reset(new Denoiser());
+
+	uDenoiser->setInputs(m_denoiserInputs);
+	uDenoiser->setOutputs(m_denoiserOutputs);
+	uDenoiser->setParameters(m_denoiserParameters);
+
+	uDenoiser->denoise();
+
+//				checkAndPutToZeroNegativeInfNaNValues(outputDenoisedColorImage); // TODO: put in utils?
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorOutput)]);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+			m_uOutputImage->getWidth(),
+			m_uOutputImage->getHeight(),
+			0, GL_RGB, GL_FLOAT,
+			m_uOutputImage->getDataPtr());
+	m_displayChanged = true;
+
+	m_currentDisplayType = EDisplayType::colorOutput;
+
+	bool skipOutputSave = false;
+	if(m_outputFilePath.m_filePath == "")
+		skipOutputSave = true;
+	else if(!ifstream(m_outputFilePath.m_filePath))
+		if(!ofstream(m_outputFilePath.m_filePath))
+		{
+			cerr << "Error: invalid output path '" << m_outputFilePath.m_filePath << "'!" << endl;
+			skipOutputSave = true;
+		}
+
+	if(!skipOutputSave)
+	{
+		ImageIO::writeEXR(*m_uOutputImage, m_outputFilePath.m_filePath.c_str());
+		cout << "Saved denoised output in file " << m_outputFilePath.m_filePath.c_str() << endl;
+	}
+	else
+	{
+		cout << "Warning: the denoised output has not been saved yet!" << endl;
+	}
+
+}
+
+
 void GuiWindow::buildParametersSubWindow()
 {
-	nanogui::ref<Window> window = m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters");
+	m_uParametersSubWindow.reset(m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters"));
 
-	m_uFormHelper->addGroup("Inputs");
+	m_uFormHelper->addVariable("Load/Save input files", m_loadSaveInputFiles);
+	m_uFormHelper->addVariable("Load/Save algo parameters", m_loadSaveInputFiles);
+	m_uFormHelper->addButton("Load...", [this]() { loadInputsAndParameters(); });
+	m_uFormHelper->addButton("Save...", [this]() { saveInputsAndParameters(); });
+
+	m_uFormHelper->addGroup("Input files");
 	auto inputColorWidget = m_uFormHelper->addVariable("Color image", m_colorInputFilePath);
+	inputColorWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputColorFile(i_rFilePath); });
 	auto inputHistWidget = m_uFormHelper->addVariable("Histogram image", m_histInputFilePath);
+	inputHistWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputHistoFile(i_rFilePath); });
 	auto inputCovWidget = m_uFormHelper->addVariable("Covariance image", m_covInputFilePath);
+	inputCovWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputCovarFile(i_rFilePath); });
 
-	m_uFormHelper->addGroup("Parameters");
+	m_uFormHelper->addGroup("Algo parameters");
 	m_uFormHelper->addVariable("Nb of scales", m_nbOfScales);
 	m_uFormHelper->addVariable("Hist distance threshold", m_denoiserParameters.m_histogramDistanceThreshold);
 	m_uFormHelper->addVariable("Use CUDA", m_denoiserParameters.m_useCuda);
@@ -198,170 +431,39 @@ void GuiWindow::buildParametersSubWindow()
 
 	m_uFormHelper->addGroup("Outputs");
 	auto outputFileWidget = m_uFormHelper->addVariable("Output file", m_outputFilePath);
-
-	auto denoiseButton = m_uFormHelper->addButton("Denoise",
+	m_uFormHelper->addButton("Save as...",
 			[this]()
 			{
-				if(!ifstream(m_outputFilePath.m_filePath))
-					if(!ofstream(m_outputFilePath.m_filePath))
-					{
-						cerr << "Error: invalid output path '" << m_outputFilePath.m_filePath << "'!" << endl;
-						return;
-					}
-
-				*m_uOutputImage = *m_uColorInputImage;
-
-				unique_ptr<IDenoiser> uDenoiser = nullptr;
-
-				if(m_nbOfScales > 1)
-					uDenoiser.reset(new MultiscaleDenoiser(m_nbOfScales));
-				else
-					uDenoiser.reset(new Denoiser());
-
-				uDenoiser->setInputs(m_denoiserInputs);
-				uDenoiser->setOutputs(m_denoiserOutputs);
-				uDenoiser->setParameters(m_denoiserParameters);
-
-				uDenoiser->denoise();
-
-//				checkAndPutToZeroNegativeInfNaNValues(outputDenoisedColorImage); // TODO: put in utils?
-
-				glActiveTexture(GL_TEXTURE0);
-				glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorOutput)]);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-						m_uOutputImage->getWidth(),
-						m_uOutputImage->getHeight(),
-						0, GL_RGB, GL_FLOAT,
-						m_uOutputImage->getDataPtr());
-				m_displayChanged = true;
-
-				ImageIO::writeEXR(*m_uOutputImage, m_outputFilePath.m_filePath.c_str());
-				cout << "Written denoised output in file " << m_outputFilePath.m_filePath.c_str() << endl;
-
-
-
+				string filePath = file_dialog({ { "exr", "EXR hdr image" } }, true);
+				if(filePath == "")
+					return;
+				ImageIO::writeEXR(*m_uOutputImage, filePath.c_str());
+				cout << "Saved denoised output in file " << filePath << endl;
 			});
+
+	auto denoiseButton = m_uFormHelper->addButton("Denoise", [this]() { denoise(); });
 //	denoiseButton->setEnabled(false);
 
 //	performLayout();
-	window->center();
+	m_uParametersSubWindow->center();
 
-
-	inputColorWidget->setCallback(
-			[this](const FilePathFormVariable& i_rFilePath)
-			{
-				if(i_rFilePath == m_colorInputFilePath)
-					return;
-				if(!ifstream(i_rFilePath.m_filePath))
-				{
-					cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
-					return;
-				}
-				m_colorInputFilePath = i_rFilePath;
-				cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-				if(ImageIO::loadEXR(*m_uColorInputImage, i_rFilePath.m_filePath.c_str()))
-				{
-					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
-
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorInput)]);
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-							m_uColorInputImage->getWidth(),
-							m_uColorInputImage->getHeight(),
-							0, GL_RGB, GL_FLOAT,
-							m_uColorInputImage->getDataPtr());
-					m_displayChanged = true;
-
-				}
-				else
-					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
-			}
-			);
-
-	inputHistWidget->setCallback(
-			[this](const FilePathFormVariable& i_rFilePath)
-			{
-				if(i_rFilePath == m_histInputFilePath)
-					return;
-				if(!ifstream(i_rFilePath.m_filePath))
-				{
-					cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
-					return;
-				}
-				m_histInputFilePath = i_rFilePath;
-				cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-				Deepimf histAndNbOfSamplesImage;
-				if(ImageIO::loadMultiChannelsEXR(histAndNbOfSamplesImage, i_rFilePath.m_filePath.c_str()))
-				{
-					Utils::separateNbOfSamplesFromHistogram(*m_uHistInputImage, *m_uNbOfSamplesInputImage, histAndNbOfSamplesImage);
-					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
-				}
-				else
-					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
-			}
-			);
-
-	inputCovWidget->setCallback(
-			[this](const FilePathFormVariable& i_rFilePath)
-			{
-				if(i_rFilePath == m_covInputFilePath)
-					return;
-				if(!ifstream(i_rFilePath.m_filePath))
-				{
-					cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
-					return;
-				}
-				m_covInputFilePath = i_rFilePath;
-				cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-				if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
-				{
-					cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
-
-					// TODO: cov trace computation and texture
-					int w = m_uCovInputImage->getWidth();
-					int h = m_uCovInputImage->getHeight();
-					m_uCovTraceInputImage->resize(w, h, 1);
-					auto covIt = m_uCovInputImage->begin();
-					auto covItEnd = m_uCovInputImage->end();
-					auto covTraceIt = m_uCovTraceInputImage->begin();
-					for(; covIt != covItEnd; ++covIt, ++covTraceIt)
-						covTraceIt[0] = sqrt(
-								covIt[int(ESymmetricMatrix3x3Data::e_xx)] +
-								covIt[int(ESymmetricMatrix3x3Data::e_yy)] +
-								covIt[int(ESymmetricMatrix3x3Data::e_zz)]);
-
-					glActiveTexture(GL_TEXTURE0);
-					glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::covTraceInput)]);
-					glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
-							m_uCovTraceInputImage->getWidth(),
-							m_uCovTraceInputImage->getHeight(),
-							0, GL_RED, GL_FLOAT,
-							m_uCovTraceInputImage->getDataPtr());
-					m_displayChanged = true;
-
-				}
-				else
-					cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
-			}
-			);
 
 	// begin of tmp adds to ease testing
-	inputColorWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test.exr"));
-	inputColorWidget->callback();
-	inputHistWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_hist.exr"));
-	inputHistWidget->callback();
-	inputCovWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_cov.exr"));
-	inputCovWidget->callback();
-	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
-	outputFileWidget->callback();
+//	inputColorWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test.exr"));
+//	inputColorWidget->callback();
+//	inputHistWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_hist.exr"));
+//	inputHistWidget->callback();
+//	inputCovWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_cov.exr"));
+//	inputCovWidget->callback();
+//	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
+//	outputFileWidget->callback();
 	// end of tmp adds to ease testing
 
 }
 
 void GuiWindow::buildDisplaySubWindow()
 {
-//	nanogui::ref<Window> window =
-	m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD display");
+	m_uDisplaySubWindow.reset(m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD display"));
 
 	m_uFormHelper->addGroup("Current display");
 	m_uFormHelper->addButton("Previous", [this](){ previousDisplayType(); });
@@ -901,6 +1003,14 @@ bool GuiWindow::keyboardEvent(int key, int scancode, int action, int modifiers)
 		return true;
 	case GLFW_KEY_DOWN:
 		nextDisplayType();
+		return true;
+	case GLFW_KEY_TAB:
+		cout << "Tab pressed!" << endl;
+		m_uParametersSubWindow->setVisible(m_hideAllSubWindows);
+		m_uDisplaySubWindow->setVisible(m_hideAllSubWindows);
+		cout << "m_uParametersSubWindow is " << (m_uParametersSubWindow->visible() ? "" : "not ") << "visible" << endl;
+		m_hideAllSubWindows = !m_hideAllSubWindows;
+		cout << "m_hideAllSubWindows = " << m_hideAllSubWindows << endl;
 		return true;
 	}
 

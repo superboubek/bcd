@@ -19,6 +19,7 @@
 namespace nanogui
 {
 	class FormHelper;
+	class Window;
 }
 
 namespace bcd
@@ -136,6 +137,15 @@ namespace bcd
 		bool m_mouseMovedBeforeButtonRelease;
 
 	private:
+		void loadInputsAndParameters();
+		void saveInputsAndParameters();
+
+		void loadInputColorFile(const FilePathFormVariable& i_rFilePath);
+		void loadInputHistoFile(const FilePathFormVariable& i_rFilePath);
+		void loadInputCovarFile(const FilePathFormVariable& i_rFilePath);
+
+		void denoise();
+
 		void buildParametersSubWindow();
 		void buildDisplaySubWindow();
 		void buildGui();
@@ -160,6 +170,14 @@ namespace bcd
 	private:
 
 		std::unique_ptr<nanogui::FormHelper> m_uFormHelper;
+
+		std::unique_ptr<nanogui::Window> m_uParametersSubWindow;
+		std::unique_ptr<nanogui::Window> m_uDisplaySubWindow;
+
+		bool m_hideAllSubWindows;
+
+		bool m_loadSaveInputFiles;
+		bool m_loadSaveAlgoParams;
 
 		FilePathFormVariable m_colorInputFilePath;
 		FilePathFormVariable m_histInputFilePath;
