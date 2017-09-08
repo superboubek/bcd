@@ -25,7 +25,7 @@ namespace bcd
 	class Denoiser : public IDenoiser
 	{
 	public:
-		Denoiser() {}
+		Denoiser() : IDenoiser() {}
 		virtual ~Denoiser() {}
 
 	public: // public methods

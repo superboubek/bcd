@@ -176,6 +176,7 @@ namespace bcd
 					{
 						currentPercentage = newPercentage;
 						cout << "\r" << currentPercentage << " %" << flush;
+						m_progressCallback(float(currentPercentage) * 0.01f);
 					}
 				}
 

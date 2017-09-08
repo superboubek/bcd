@@ -75,6 +75,7 @@ namespace bcd
 			denoiser.setInputs(inputsArray[m_nbOfScales - 1]);
 			denoiser.setOutputs(outputsArray[m_nbOfScales - 1]);
 			denoiser.setParameters(m_parameters);
+			denoiser.setProgressCallback([this](float i_progress){ m_progressCallback(i_progress / float(m_nbOfScales)); });
 			denoiser.denoise();
 #ifdef SAVE_ADDITIONAL_OUTPUTS
 			{ // TEMPORARY
@@ -92,6 +93,7 @@ namespace bcd
 			denoiser.setInputs(inputsArray[scale]);
 			denoiser.setOutputs(outputsArray[scale]);
 			denoiser.setParameters(m_parameters);
+			denoiser.setProgressCallback([this, scale](float i_progress) { m_progressCallback((float(m_nbOfScales - 1 - scale) + i_progress) / m_nbOfScales); } );
 			denoiser.denoise();
 #ifdef SAVE_ADDITIONAL_OUTPUTS
 			{ // TEMPORARY

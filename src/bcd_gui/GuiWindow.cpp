@@ -393,6 +393,7 @@ void GuiWindow::denoise()
 	uDenoiser->setInputs(m_denoiserInputs);
 	uDenoiser->setOutputs(m_denoiserOutputs);
 	uDenoiser->setParameters(m_denoiserParameters);
+	uDenoiser->setProgressCallback([](float i_progress) { cout << "progress = " << i_progress << endl; });
 
 	uDenoiser->denoise();
 
