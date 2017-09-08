@@ -226,6 +226,28 @@ void GuiWindow::loadInputsAndParameters()
 			m_covInputFilePath.m_filePath = newFilePath;
 		}
 	}
+
+	if(m_loadSaveAlgoParams)
+	{
+		if((it = jsonObject.find("nbOfScales")) != notFound)
+			m_nbOfScales = it.value();
+		if((it = jsonObject.find("histoDistanceThreshold")) != notFound)
+			m_denoiserParameters.m_histogramDistanceThreshold = it.value();
+		if((it = jsonObject.find("useCuda")) != notFound)
+			m_denoiserParameters.m_useCuda = it.value();
+		if((it = jsonObject.find("nbOfCores")) != notFound)
+			m_denoiserParameters.m_nbOfCores = it.value();
+		if((it = jsonObject.find("patchRadius")) != notFound)
+			m_denoiserParameters.m_patchRadius = it.value();
+		if((it = jsonObject.find("searchWindowRadius")) != notFound)
+			m_denoiserParameters.m_searchWindowRadius = it.value();
+		if((it = jsonObject.find("randomPixelOrder")) != notFound)
+			m_denoiserParameters.m_useRandomPixelOrder = it.value();
+		if((it = jsonObject.find("markedPixelsSkippingProbability")) != notFound)
+			m_denoiserParameters.m_markedPixelsSkippingProbability = it.value();
+		if((it = jsonObject.find("minEigenValue")) != notFound)
+			m_denoiserParameters.m_minEigenValue = it.value();
+	}
 }
 
 void GuiWindow::saveInputsAndParameters()
@@ -248,6 +270,15 @@ void GuiWindow::saveInputsAndParameters()
 	}
 	if(m_loadSaveAlgoParams)
 	{
+		jsonObject["nbOfScales"] = m_nbOfScales;
+		jsonObject["histoDistanceThreshold"] = m_denoiserParameters.m_histogramDistanceThreshold;
+		jsonObject["useCuda"] = m_denoiserParameters.m_useCuda;
+		jsonObject["nbOfCores"] = m_denoiserParameters.m_nbOfCores;
+		jsonObject["patchRadius"] = m_denoiserParameters.m_patchRadius;
+		jsonObject["searchWindowRadius"] = m_denoiserParameters.m_searchWindowRadius;
+		jsonObject["randomPixelOrder"] = m_denoiserParameters.m_useRandomPixelOrder;
+		jsonObject["markedPixelsSkippingProbability"] = m_denoiserParameters.m_markedPixelsSkippingProbability;
+		jsonObject["minEigenValue"] = m_denoiserParameters.m_minEigenValue;
 
 	}
 	file << jsonObject.dump(4);
