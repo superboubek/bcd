@@ -41,6 +41,8 @@ namespace bcd
 		int getImagesWidth() const { return m_width; }
 		int getImagesHeight() const { return m_height; }
 
+		bool inputsOutputsAreOk();
+
 	private:
 		int m_width;
 		int m_height;
@@ -54,7 +56,6 @@ namespace bcd
 
 
 	private: // private auxilliary methods
-		bool inputsOutputsAreOk();
 		void computeNbOfSamplesSqrt();
 		void computePixelCovFromSampleCov();
 		void reorderPixelSet(std::vector<PixelPosition>& io_rPixelSet) const; ///< Reorders the pixel set

@@ -118,6 +118,7 @@ GuiWindow::GuiWindow() :
 		m_uFormHelper(nullptr),
 		m_uParametersSubWindow(nullptr),
 		m_uDisplaySubWindow(nullptr),
+		m_uDenoisingProgressBar(nullptr),
 		m_hideAllSubWindows(false),
 		m_loadSaveInputFiles(true),
 		m_loadSaveAlgoParams(true),
@@ -184,13 +185,17 @@ void GuiWindow::displayUntilClosed()
 
 void GuiWindow::loadInputsAndParameters()
 {
-	string filePath = file_dialog({ { "bcd.json", "BCD Json file" } }, true);
-	if(filePath == "")
+	loadInputsAndParameters(file_dialog({ { "bcd.json", "BCD Json file" } }, true));
+}
+
+void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
+{
+	if(i_rFilePath == "")
 		return;
-	ifstream file(filePath);
+	ifstream file(i_rFilePath);
 	if(!file)
 	{
-		cerr << "Error: couldn't open file '" << filePath << "'" << endl;
+		cerr << "Error: couldn't open file '" << i_rFilePath << "'" << endl;
 		return;
 	}
 	Json jsonObject;
@@ -393,11 +398,20 @@ void GuiWindow::denoise()
 	uDenoiser->setInputs(m_denoiserInputs);
 	uDenoiser->setOutputs(m_denoiserOutputs);
 	uDenoiser->setParameters(m_denoiserParameters);
-	uDenoiser->setProgressCallback([](float i_progress) { cout << "progress = " << i_progress << endl; });
+	uDenoiser->setProgressCallback([this](float i_progress) { m_uDenoisingProgressBar->setValue(i_progress); drawAll(); });
 
-	uDenoiser->denoise();
+	{
+		Chronometer chrono;
+		chrono.start();
+		uDenoiser->denoise();
+		chrono.stop();
+		cout << "Denoising was performed in " << chrono << endl;
+	}
+
 
 //				checkAndPutToZeroNegativeInfNaNValues(outputDenoisedColorImage); // TODO: put in utils?
+
+	m_uDenoisingProgressBar->setValue(1.f);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorOutput)]);
@@ -476,6 +490,11 @@ void GuiWindow::buildParametersSubWindow()
 	auto denoiseButton = m_uFormHelper->addButton("Denoise", [this]() { denoise(); });
 //	denoiseButton->setEnabled(false);
 
+	m_uDenoisingProgressBar.reset(new ProgressBar(m_uParametersSubWindow.get()));
+	m_uDenoisingProgressBar->setValue(0.f);
+	m_uFormHelper->addWidget("", m_uDenoisingProgressBar.get());
+
+
 //	performLayout();
 	m_uParametersSubWindow->center();
 
@@ -489,6 +508,7 @@ void GuiWindow::buildParametersSubWindow()
 //	inputCovWidget->callback();
 //	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
 //	outputFileWidget->callback();
+	loadInputsAndParameters("/data/boughida/projects/bcd/data/inputs/tests/test.bcd.json");
 	// end of tmp adds to ease testing
 
 }

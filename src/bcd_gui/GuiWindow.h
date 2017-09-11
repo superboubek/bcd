@@ -20,6 +20,7 @@ namespace nanogui
 {
 	class FormHelper;
 	class Window;
+	class ProgressBar;
 }
 
 namespace bcd
@@ -138,6 +139,7 @@ namespace bcd
 
 	private:
 		void loadInputsAndParameters();
+		void loadInputsAndParameters(const std::string& i_rFilePath);
 		void saveInputsAndParameters();
 
 		void loadInputColorFile(const FilePathFormVariable& i_rFilePath);
@@ -173,6 +175,8 @@ namespace bcd
 
 		std::unique_ptr<nanogui::Window> m_uParametersSubWindow;
 		std::unique_ptr<nanogui::Window> m_uDisplaySubWindow;
+
+		std::unique_ptr<nanogui::ProgressBar> m_uDenoisingProgressBar;
 
 		bool m_hideAllSubWindows;
 

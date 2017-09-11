@@ -41,7 +41,7 @@ namespace bcd
 		m_isRunning = false;
 	}
 
-	float Chronometer::getElapsedTime()
+	float Chronometer::getElapsedTime() const
 	{
 		if(m_isRunning)
 		{
@@ -85,6 +85,12 @@ namespace bcd
 	void Chronometer::printElapsedTime(std::ostream& o_stream)
 	{
 		o_stream << getStringFromTime(getElapsedTime());
+	}
+
+	ostream& operator<<(ostream& i_rOs, const Chronometer& i_rChrono)
+	{
+		i_rOs << Chronometer::getStringFromTime(i_rChrono.getElapsedTime());
+		return i_rOs;
 	}
 
 } // namespace bcd

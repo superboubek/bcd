@@ -30,7 +30,7 @@ namespace bcd
 		void reset();
 		void start();
 		void stop();
-		float getElapsedTime(); ///< Returns elapsed time in seconds
+		float getElapsedTime() const; ///< Returns elapsed time in seconds
 		static std::string getStringFromTime(float i_timeInSeconds);
 		void printElapsedTime(std::ostream& o_stream = std::cout);
 
@@ -39,6 +39,8 @@ namespace bcd
 		float m_elapsedTime;
 		std::chrono::high_resolution_clock::time_point m_startTime;
 	};
+
+	std::ostream& operator<<(std::ostream& i_rOs, const Chronometer& i_rChrono);
 
 } // namespace bcd
 

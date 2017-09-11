@@ -193,6 +193,7 @@ namespace bcd
 #endif
 		}
 
+		m_outputs.m_pDenoisedColors->resize(m_width, m_height, 3);
 		m_outputs.m_pDenoisedColors->fill(0.f);
 		finalAggregation();
 
@@ -250,6 +251,87 @@ namespace bcd
 				}
 			}
 #endif
+		}
+		{
+
+		}
+		{
+			bool imageNullptr = false;
+			if(!m_inputs.m_pColors)
+			{
+				imageNullptr = true;
+				cerr << "Aborting denoising: nullptr for input color image" << endl;
+			}
+			if(!m_inputs.m_pNbOfSamples)
+			{
+				imageNullptr = true;
+				cerr << "Aborting denoising: nullptr for input number of samples image" << endl;
+			}
+			if(!m_inputs.m_pHistograms)
+			{
+				imageNullptr = true;
+				cerr << "Aborting denoising: nullptr for input histogram image" << endl;
+			}
+			if(!m_inputs.m_pSampleCovariances)
+			{
+				imageNullptr = true;
+				cerr << "Aborting denoising: nullptr for input covariance image" << endl;
+			}
+			if(imageNullptr)
+				return false;
+		}
+		{
+			bool emptyInput = false;
+			if(m_inputs.m_pColors->isEmpty())
+			{
+				emptyInput = true;
+				cerr << "Aborting denoising: input color image is empty" << endl;
+			}
+			if(m_inputs.m_pNbOfSamples->isEmpty())
+			{
+				emptyInput = true;
+				cerr << "Aborting denoising: input number of samples image is empty" << endl;
+			}
+			if(m_inputs.m_pHistograms->isEmpty())
+			{
+				emptyInput = true;
+				cerr << "Aborting denoising: input histogram image is empty" << endl;
+			}
+			if(m_inputs.m_pSampleCovariances->isEmpty())
+			{
+				emptyInput = true;
+				cerr << "Aborting denoising: input covariance image is empty" << endl;
+			}
+			if(emptyInput)
+				return false;
+		}
+		{
+			int w = m_inputs.m_pColors->getWidth();
+			int h = m_inputs.m_pColors->getHeight();
+			bool badImageSize = false;
+			if(m_inputs.m_pNbOfSamples->getWidth() != w || m_inputs.m_pNbOfSamples->getHeight() != h)
+			{
+				badImageSize = true;
+				cerr << "Aborting denoising: input number of samples image is "
+						<< m_inputs.m_pNbOfSamples->getWidth() << "x" << m_inputs.m_pNbOfSamples->getHeight()
+						<< "but input color image is " << w << "x" << h << endl;
+			}
+			if(m_inputs.m_pHistograms->getWidth() != w || m_inputs.m_pHistograms->getHeight() != h)
+			{
+				badImageSize = true;
+				cerr << "Aborting denoising: input histogram image is "
+						<< m_inputs.m_pHistograms->getWidth() << "x" << m_inputs.m_pHistograms->getHeight()
+						<< "but input color image is " << w << "x" << h << endl;
+			}
+			if(m_inputs.m_pSampleCovariances->getWidth() != w || m_inputs.m_pSampleCovariances->getHeight() != h)
+			{
+				badImageSize = true;
+				cerr << "Aborting denoising: input covariance image is "
+						<< m_inputs.m_pSampleCovariances->getWidth() << "x" << m_inputs.m_pSampleCovariances->getHeight()
+						<< "but input color image is " << w << "x" << h << endl;
+			}
+			if(badImageSize)
+				return false;
 		}
 		return true;
 	}
