@@ -452,7 +452,7 @@ void GuiWindow::buildParametersSubWindow()
 	m_uParametersSubWindow.reset(m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters"));
 
 	m_uFormHelper->addVariable("Load/Save input files", m_loadSaveInputFiles);
-	m_uFormHelper->addVariable("Load/Save algo parameters", m_loadSaveInputFiles);
+	m_uFormHelper->addVariable("Load/Save algo parameters", m_loadSaveAlgoParams);
 	m_uFormHelper->addButton("Load...", [this]() { loadInputsAndParameters(); });
 	m_uFormHelper->addButton("Save...", [this]() { saveInputsAndParameters(); });
 
@@ -1057,12 +1057,12 @@ bool GuiWindow::keyboardEvent(int key, int scancode, int action, int modifiers)
 		nextDisplayType();
 		return true;
 	case GLFW_KEY_TAB:
-		cout << "Tab pressed!" << endl;
+//		cout << "Tab pressed!" << endl;
 		m_uParametersSubWindow->setVisible(m_hideAllSubWindows);
 		m_uDisplaySubWindow->setVisible(m_hideAllSubWindows);
-		cout << "m_uParametersSubWindow is " << (m_uParametersSubWindow->visible() ? "" : "not ") << "visible" << endl;
+//		cout << "m_uParametersSubWindow is " << (m_uParametersSubWindow->visible() ? "" : "not ") << "visible" << endl;
 		m_hideAllSubWindows = !m_hideAllSubWindows;
-		cout << "m_hideAllSubWindows = " << m_hideAllSubWindows << endl;
+//		cout << "m_hideAllSubWindows = " << m_hideAllSubWindows << endl;
 		return true;
 	}
 
