@@ -104,7 +104,7 @@ NAMESPACE_END(nanogui)
 GuiWindow::GuiWindow() :
 		Screen(
 		Vector2i(1024, 1024), // size
-		"BCD GUI", // title
+		"BCD Tweaker", // title
 		true, // resizable
 		false, // fullscreen
 		8, // colorBits
@@ -188,6 +188,16 @@ void GuiWindow::loadInputsAndParameters()
 	loadInputsAndParameters(file_dialog({ { "bcd.json", "BCD Json file" } }, true));
 }
 
+string extractFolderPath(const string& i_rFilePath)
+{
+	cout << "extracting folder path from file: '" << i_rFilePath << "': ";
+	const char sep = '/';
+	size_t pos = i_rFilePath.rfind(sep);
+	if(pos == string::npos)
+		return "";
+	return i_rFilePath.substr(0, pos + 1);
+}
+
 void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 {
 	if(i_rFilePath == "")
@@ -198,6 +208,7 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		cerr << "Error: couldn't open file '" << i_rFilePath << "'" << endl;
 		return;
 	}
+	string folderPath = extractFolderPath(i_rFilePath);
 	Json jsonObject;
 	file >> jsonObject;
 
@@ -210,7 +221,8 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		it = jsonObject.find("inputColorFile");
 		if(it != notFound)
 		{
-			newFilePath = it.value();
+			newFilePath = folderPath;
+			newFilePath += it.value();
 			loadInputColorFile(FilePathFormVariable(newFilePath));
 			m_colorInputFilePath.m_filePath = newFilePath;
 		}
@@ -218,7 +230,8 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		it = jsonObject.find("inputHistoFile");
 		if(it != notFound)
 		{
-			newFilePath = it.value();
+			newFilePath = folderPath;
+			newFilePath += it.value();
 			loadInputHistoFile(FilePathFormVariable(newFilePath));
 			m_histInputFilePath.m_filePath = newFilePath;
 		}
@@ -226,7 +239,8 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		it = jsonObject.find("inputCovarFile");
 		if(it != notFound)
 		{
-			newFilePath = it.value();
+			newFilePath = folderPath;
+			newFilePath += it.value();
 			loadInputCovarFile(FilePathFormVariable(newFilePath));
 			m_covInputFilePath.m_filePath = newFilePath;
 		}
@@ -255,6 +269,33 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 	}
 }
 
+string getRelativePathFromFolder(const string& i_rFileAbsolutePath, const string& i_rFolderAbsolutePath)
+{
+	const char sep = '/';
+	size_t l1 = i_rFileAbsolutePath.length();
+	size_t l2 = i_rFolderAbsolutePath.length();
+	size_t l = (l1 > l2 ? l2 : l1);
+
+	size_t posAfterLastCommonSep = 0;
+	for(size_t i = 0; i < l; ++i)
+	{
+		char c = i_rFileAbsolutePath[i];
+		if(c != i_rFolderAbsolutePath[i])
+			break;
+		if(c == sep)
+			posAfterLastCommonSep = i + 1;
+	}
+
+	string relativePath = "";
+	for(size_t i = posAfterLastCommonSep; i < l2; ++i)
+		if(i_rFolderAbsolutePath[i] == sep)
+			relativePath += "../";
+
+	relativePath += i_rFileAbsolutePath.substr(posAfterLastCommonSep);
+
+	return relativePath;
+}
+
 void GuiWindow::saveInputsAndParameters()
 {
 	string filePath = file_dialog({ { "bcd.json", "BCD Json file" } }, true);
@@ -266,12 +307,14 @@ void GuiWindow::saveInputsAndParameters()
 		cerr << "Error: couldn't write file '" << filePath << "'" << endl;
 		return;
 	}
+	string folderPath = extractFolderPath(filePath);
+
 	Json jsonObject;
 	if(m_loadSaveInputFiles)
 	{
-		jsonObject["inputColorFile"] = m_colorInputFilePath.m_filePath;
-		jsonObject["inputHistoFile"] = m_histInputFilePath.m_filePath;
-		jsonObject["inputCovarFile"] = m_covInputFilePath.m_filePath;
+		jsonObject["inputColorFile"] = getRelativePathFromFolder(m_colorInputFilePath.m_filePath, folderPath);
+		jsonObject["inputHistoFile"] = getRelativePathFromFolder(m_histInputFilePath.m_filePath, folderPath);
+		jsonObject["inputCovarFile"] = getRelativePathFromFolder(m_covInputFilePath.m_filePath, folderPath);
 	}
 	if(m_loadSaveAlgoParams)
 	{
