@@ -54,6 +54,7 @@ SET(src_files
 	DenoisingUnit.cpp
 	MultiscaleDenoiser.cpp
 	SpikeRemovalFilter.cpp
+	ParametersIO.cpp
 	${common_folder}/Chronometer.cpp
 	${common_folder}/ImageIO.cpp
 	${common_folder}/Utils.cpp
@@ -66,6 +67,7 @@ SET(header_files
 	DenoisingUnit.h
 	MultiscaleDenoiser.h
 	SpikeRemovalFilter.h
+	ParametersIO.h
 	${common_folder}/DeepImage.h
 	${common_folder}/Chronometer.h
 	${common_folder}/ImageIO.h
@@ -99,6 +101,7 @@ SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 TARGET_LINK_LIBRARIES(${target_name} PUBLIC OpenMP)
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE OpenExr)
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE eigen)
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE Json)
 
 INSTALL(TARGETS ${target_name} ARCHIVE DESTINATION lib)
 

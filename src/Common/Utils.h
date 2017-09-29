@@ -9,6 +9,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <string>
+
 namespace bcd
 {
 
@@ -26,6 +28,10 @@ namespace bcd
 				DeepImage<float>& o_rNbOfSamplesImage,
 				const DeepImage<float>& i_rHistAndNbOfSamplesImage
 		);
+
+		static std::string extractFolderPath(const std::string& i_rFilePath);
+
+		static std::string getRelativePathFromFolder(const std::string& i_rFileAbsolutePath, const std::string& i_rFolderAbsolutePath);
 
 	};
 
