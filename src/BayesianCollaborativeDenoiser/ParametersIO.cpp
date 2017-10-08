@@ -50,8 +50,8 @@ namespace bcd
 		Json jsonObject;
 		file >> jsonObject;
 
-		Json::iterator it;
-		Json::iterator notFound = jsonObject.end();
+		Json::const_iterator it;
+		Json::const_iterator notFound = jsonObject.cend();
 		if(i_selector.m_inputFileNames)
 		{
 			string newFilePath;
@@ -60,7 +60,7 @@ namespace bcd
 			if(it != notFound)
 			{
 				newFilePath = folderPath;
-				newFilePath += it.value();
+				newFilePath += it->get<string>();
 				o_rParams.m_inputFileNames.m_colors = newFilePath;
 			}
 
@@ -68,7 +68,7 @@ namespace bcd
 			if(it != notFound)
 			{
 				newFilePath = folderPath;
-				newFilePath += it.value();
+				newFilePath += it->get<string>();
 				o_rParams.m_inputFileNames.m_histograms = newFilePath;
 			}
 
@@ -76,7 +76,7 @@ namespace bcd
 			if(it != notFound)
 			{
 				newFilePath = folderPath;
-				newFilePath += it.value();
+				newFilePath += it->get<string>();
 				o_rParams.m_inputFileNames.m_covariances = newFilePath;
 			}
 		}

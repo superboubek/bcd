@@ -212,7 +212,7 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		if(it != notFound)
 		{
 			newFilePath = folderPath;
-			newFilePath += it.value();
+			newFilePath += it->get<string>();
 			loadInputColorFile(FilePathFormVariable(newFilePath));
 			m_colorInputFilePath.m_filePath = newFilePath;
 		}
@@ -221,7 +221,7 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		if(it != notFound)
 		{
 			newFilePath = folderPath;
-			newFilePath += it.value();
+			newFilePath += it->get<string>();
 			loadInputHistoFile(FilePathFormVariable(newFilePath));
 			m_histInputFilePath.m_filePath = newFilePath;
 		}
@@ -230,7 +230,7 @@ void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 		if(it != notFound)
 		{
 			newFilePath = folderPath;
-			newFilePath += it.value();
+			newFilePath += it->get<string>();
 			loadInputCovarFile(FilePathFormVariable(newFilePath));
 			m_covInputFilePath.m_filePath = newFilePath;
 		}
