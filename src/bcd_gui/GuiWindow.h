@@ -4,6 +4,8 @@
 
 #include "IDenoiser.h"
 
+#include "ParametersIO.h"
+
 #include "nanogui/glutil.h"
 #include "nanogui/screen.h"
 
@@ -142,9 +144,9 @@ namespace bcd
 		void loadInputsAndParameters(const std::string& i_rFilePath);
 		void saveInputsAndParameters();
 
-		void loadInputColorFile(const FilePathFormVariable& i_rFilePath);
-		void loadInputHistoFile(const FilePathFormVariable& i_rFilePath);
-		void loadInputCovarFile(const FilePathFormVariable& i_rFilePath);
+		void loadInputColorFile(const std::string& i_rFilePath);
+		void loadInputHistoFile(const std::string& i_rFilePath);
+		void loadInputCovarFile(const std::string& i_rFilePath);
 
 		void denoise();
 
@@ -184,19 +186,18 @@ namespace bcd
 		bool m_loadSaveAlgoParams;
 
 		FilePathFormVariable m_colorInputFilePath;
-		FilePathFormVariable m_histInputFilePath;
-		FilePathFormVariable m_covInputFilePath;
-
-		std::string m_loadedColorInputFilePath;
-		std::string m_loadedHistInputFilePath;
-		std::string m_loadedCovInputFilePath;
+		FilePathFormVariable m_histoInputFilePath;
+		FilePathFormVariable m_covarInputFilePath;
 
 		bool m_inputsAreLoaded;
 
 		FilePathFormVariable m_outputFilePath;
 
-		int m_nbOfScales;
-		DenoiserParameters m_denoiserParameters;
+		PipelineParameters m_pipelineParameters;
+		PipelineParametersSelector m_pipelineParametersSelector;
+
+//		int m_nbOfScales;
+//		DenoiserParameters m_denoiserParameters;
 		DenoiserInputs m_denoiserInputs;
 		DenoiserOutputs m_denoiserOutputs;
 

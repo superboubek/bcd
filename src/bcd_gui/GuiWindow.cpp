@@ -19,8 +19,6 @@
 #include "Chronometer.h"
 #include "Utils.h"
 
-#include <json.hpp>
-
 #include <nanogui/nanogui.h>
 
 #include <Eigen/Dense>
@@ -35,7 +33,6 @@
 using namespace std;
 using namespace nanogui;
 using namespace bcd;
-using Json = nlohmann::json;
 
 
 const float ViewFrame::s_zoomFactor = 1.08f;
@@ -56,12 +53,18 @@ public:
 		m_pTextBox = new TextBox(this);
 		m_pTextBox->setFixedSize(Vector2i(80, 25));
 		m_pTextBox->setAlignment(TextBox::Alignment::Right);
+		m_pTextBox->setCallback(
+				[this](const string& i_rValue) -> bool
+				{
+					callback()(FilePathFormVariable(i_rValue));
+					return true;
+				});
 		m_pBrowseButton = new Button(this, "Browse");
 		m_pBrowseButton->setCallback(
 				[this]()
 				{
 					m_pTextBox->setValue(file_dialog({ {"*", "All files"} }, true));
-					m_pTextBox->callback()(m_pTextBox->value());
+					callback()(m_pTextBox->value());
 				});
 	}
 	void setValue(const FilePathFormVariable& i_rFilePath)
@@ -71,27 +74,21 @@ public:
 	void setEditable(bool i_editable) { m_pTextBox->setEditable(i_editable); m_pBrowseButton->setEnabled(i_editable); }
 	FilePathFormVariable value() const { return FilePathFormVariable(m_pTextBox->value()); }
 
-	void setCallback(const std::function<void(const FilePathFormVariable&)>& i_rCallback)
-	{
-		m_pTextBox->setCallback(
-				[this, i_rCallback](const string& i_rValue) -> bool
-				{
-					i_rCallback(FilePathFormVariable(i_rValue));
-					return true;
-				});
-	}
+	std::function<void(const FilePathFormVariable& str)> callback() const { return m_callback; }
+	void setCallback(const std::function<void(const FilePathFormVariable& str)>& i_rCallback) { m_callback = i_rCallback; }
+
 	void setButtonText(const string& i_rButtonText)
 	{
 		m_pBrowseButton->setCaption(i_rButtonText);
 	}
-	void callback() // TODO: this method is just temporary?
-	{
-		m_pTextBox->callback()(m_pTextBox->value());
-	}
 
 private:
+
 	TextBox* m_pTextBox;
 	Button* m_pBrowseButton;
+
+	std::function<void(const FilePathFormVariable& str)> m_callback;
+
 };
 
 
@@ -123,7 +120,6 @@ GuiWindow::GuiWindow() :
 		m_loadSaveInputFiles(true),
 		m_loadSaveAlgoParams(true),
 		m_inputsAreLoaded(false),
-		m_nbOfScales(3),
 		m_uColorInputImage(new Deepimf()),
 		m_uNbOfSamplesInputImage(new Deepimf()),
 		m_uHistInputImage(new Deepimf()),
@@ -160,23 +156,10 @@ GuiWindow::~GuiWindow()
 {
 }
 
-void testJson()
-{
-	Json j;
-	j["pi"] = 3.141;
-	j["happy"] = true;
-	j["name"] = "Niels";
-
-	cout << setw(2) << j << endl;
-	cout << setw(6) << j << endl;
-}
-
 void GuiWindow::displayUntilClosed()
 {
 	initOpenGL();
 	buildGui();
-
-	testJson();
 
 	setVisible(true);
 
@@ -190,73 +173,12 @@ void GuiWindow::loadInputsAndParameters()
 
 void GuiWindow::loadInputsAndParameters(const string& i_rFilePath)
 {
-	if(i_rFilePath == "")
+	if(!ParametersIO::load(m_pipelineParameters, i_rFilePath, m_pipelineParametersSelector))
 		return;
-	ifstream file(i_rFilePath);
-	if(!file)
-	{
-		cerr << "Error: couldn't open file '" << i_rFilePath << "'" << endl;
-		return;
-	}
-	string folderPath = Utils::extractFolderPath(i_rFilePath);
-	Json jsonObject;
-	file >> jsonObject;
 
-	Json::iterator it;
-	Json::iterator notFound = jsonObject.end();
-	if(m_loadSaveInputFiles)
-	{
-		string newFilePath;
-
-		it = jsonObject.find("inputColorFile");
-		if(it != notFound)
-		{
-			newFilePath = folderPath;
-			newFilePath += it->get<string>();
-			loadInputColorFile(FilePathFormVariable(newFilePath));
-			m_colorInputFilePath.m_filePath = newFilePath;
-		}
-
-		it = jsonObject.find("inputHistoFile");
-		if(it != notFound)
-		{
-			newFilePath = folderPath;
-			newFilePath += it->get<string>();
-			loadInputHistoFile(FilePathFormVariable(newFilePath));
-			m_histInputFilePath.m_filePath = newFilePath;
-		}
-
-		it = jsonObject.find("inputCovarFile");
-		if(it != notFound)
-		{
-			newFilePath = folderPath;
-			newFilePath += it->get<string>();
-			loadInputCovarFile(FilePathFormVariable(newFilePath));
-			m_covInputFilePath.m_filePath = newFilePath;
-		}
-	}
-
-	if(m_loadSaveAlgoParams)
-	{
-		if((it = jsonObject.find("nbOfScales")) != notFound)
-			m_nbOfScales = it.value();
-		if((it = jsonObject.find("histoDistanceThreshold")) != notFound)
-			m_denoiserParameters.m_histogramDistanceThreshold = it.value();
-		if((it = jsonObject.find("useCuda")) != notFound)
-			m_denoiserParameters.m_useCuda = it.value();
-		if((it = jsonObject.find("nbOfCores")) != notFound)
-			m_denoiserParameters.m_nbOfCores = it.value();
-		if((it = jsonObject.find("patchRadius")) != notFound)
-			m_denoiserParameters.m_patchRadius = it.value();
-		if((it = jsonObject.find("searchWindowRadius")) != notFound)
-			m_denoiserParameters.m_searchWindowRadius = it.value();
-		if((it = jsonObject.find("randomPixelOrder")) != notFound)
-			m_denoiserParameters.m_useRandomPixelOrder = it.value();
-		if((it = jsonObject.find("markedPixelsSkippingProbability")) != notFound)
-			m_denoiserParameters.m_markedPixelsSkippingProbability = it.value();
-		if((it = jsonObject.find("minEigenValue")) != notFound)
-			m_denoiserParameters.m_minEigenValue = it.value();
-	}
+	loadInputColorFile(m_pipelineParameters.m_inputFileNames.m_colors);
+	loadInputHistoFile(m_pipelineParameters.m_inputFileNames.m_histograms);
+	loadInputCovarFile(m_pipelineParameters.m_inputFileNames.m_covariances);
 }
 
 void GuiWindow::saveInputsAndParameters()
@@ -264,52 +186,29 @@ void GuiWindow::saveInputsAndParameters()
 	string filePath = file_dialog({ { "bcd.json", "BCD Json file" } }, true);
 	if(filePath == "")
 		return;
-	ofstream file(filePath);
-	if(!file)
-	{
-		cerr << "Error: couldn't write file '" << filePath << "'" << endl;
-		return;
-	}
-	string folderPath = Utils::extractFolderPath(filePath);
 
-	Json jsonObject;
-	if(m_loadSaveInputFiles)
-	{
-		jsonObject["inputColorFile"] = Utils::getRelativePathFromFolder(m_colorInputFilePath.m_filePath, folderPath);
-		jsonObject["inputHistoFile"] = Utils::getRelativePathFromFolder(m_histInputFilePath.m_filePath, folderPath);
-		jsonObject["inputCovarFile"] = Utils::getRelativePathFromFolder(m_covInputFilePath.m_filePath, folderPath);
-	}
-	if(m_loadSaveAlgoParams)
-	{
-		jsonObject["nbOfScales"] = m_nbOfScales;
-		jsonObject["histoDistanceThreshold"] = m_denoiserParameters.m_histogramDistanceThreshold;
-		jsonObject["useCuda"] = m_denoiserParameters.m_useCuda;
-		jsonObject["nbOfCores"] = m_denoiserParameters.m_nbOfCores;
-		jsonObject["patchRadius"] = m_denoiserParameters.m_patchRadius;
-		jsonObject["searchWindowRadius"] = m_denoiserParameters.m_searchWindowRadius;
-		jsonObject["randomPixelOrder"] = m_denoiserParameters.m_useRandomPixelOrder;
-		jsonObject["markedPixelsSkippingProbability"] = m_denoiserParameters.m_markedPixelsSkippingProbability;
-		jsonObject["minEigenValue"] = m_denoiserParameters.m_minEigenValue;
+	m_pipelineParameters.m_inputFileNames.m_colors = m_colorInputFilePath.m_filePath;
+	m_pipelineParameters.m_inputFileNames.m_covariances = m_covarInputFilePath.m_filePath;
+	m_pipelineParameters.m_inputFileNames.m_histograms = m_histoInputFilePath.m_filePath;
 
-	}
-	file << jsonObject.dump(4);
+	ParametersIO::write(m_pipelineParameters, filePath, m_pipelineParametersSelector);
 }
 
 
-void GuiWindow::loadInputColorFile(const FilePathFormVariable& i_rFilePath)
+void GuiWindow::loadInputColorFile(const string& i_rFilePath)
 {
-	if(i_rFilePath == m_colorInputFilePath)
+	if(i_rFilePath == m_colorInputFilePath.m_filePath)
 		return;
-	if(!ifstream(i_rFilePath.m_filePath))
+	if(!ifstream(i_rFilePath))
 	{
-		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		cerr << "Warning: file '" << i_rFilePath << "' does not exist" << endl;
 		return;
 	}
-	m_colorInputFilePath = i_rFilePath;
-	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-	if(ImageIO::loadEXR(*m_uColorInputImage, i_rFilePath.m_filePath.c_str()))
+	m_colorInputFilePath.m_filePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath << "'..." << endl;
+	if(ImageIO::loadEXR(*m_uColorInputImage, i_rFilePath.c_str()))
 	{
-		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+		cout << "file '" <<  i_rFilePath << "' loaded!" << endl;
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorInput)]);
@@ -322,44 +221,44 @@ void GuiWindow::loadInputColorFile(const FilePathFormVariable& i_rFilePath)
 
 	}
 	else
-		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+		cerr << "ERROR: loading of file '" << i_rFilePath << "' failed!" << endl;
 }
 
-void GuiWindow::loadInputHistoFile(const FilePathFormVariable& i_rFilePath)
+void GuiWindow::loadInputHistoFile(const string& i_rFilePath)
 {
-	if(i_rFilePath == m_histInputFilePath)
+	if(i_rFilePath == m_histoInputFilePath.m_filePath)
 		return;
-	if(!ifstream(i_rFilePath.m_filePath))
+	if(!ifstream(i_rFilePath))
 	{
-		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		cerr << "Warning: file '" << i_rFilePath << "' does not exist" << endl;
 		return;
 	}
-	m_histInputFilePath = i_rFilePath;
-	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
+	m_histoInputFilePath.m_filePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath << "'..." << endl;
 	Deepimf histAndNbOfSamplesImage;
-	if(ImageIO::loadMultiChannelsEXR(histAndNbOfSamplesImage, i_rFilePath.m_filePath.c_str()))
+	if(ImageIO::loadMultiChannelsEXR(histAndNbOfSamplesImage, i_rFilePath.c_str()))
 	{
 		Utils::separateNbOfSamplesFromHistogram(*m_uHistInputImage, *m_uNbOfSamplesInputImage, histAndNbOfSamplesImage);
-		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+		cout << "file '" <<  i_rFilePath << "' loaded!" << endl;
 	}
 	else
-		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+		cerr << "ERROR: loading of file '" << i_rFilePath << "' failed!" << endl;
 }
 
-void GuiWindow::loadInputCovarFile(const FilePathFormVariable& i_rFilePath)
+void GuiWindow::loadInputCovarFile(const string& i_rFilePath)
 {
-	if(i_rFilePath == m_covInputFilePath)
+	if(i_rFilePath == m_covarInputFilePath.m_filePath)
 		return;
-	if(!ifstream(i_rFilePath.m_filePath))
+	if(!ifstream(i_rFilePath))
 	{
-		cerr << "Warning: file '" << i_rFilePath.m_filePath << "' does not exist" << endl;
+		cerr << "Warning: file '" << i_rFilePath << "' does not exist" << endl;
 		return;
 	}
-	m_covInputFilePath = i_rFilePath;
-	cout << "loading file '" << i_rFilePath.m_filePath << "'..." << endl;
-	if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.m_filePath.c_str()))
+	m_covarInputFilePath.m_filePath = i_rFilePath;
+	cout << "loading file '" << i_rFilePath << "'..." << endl;
+	if(ImageIO::loadMultiChannelsEXR(*m_uCovInputImage, i_rFilePath.c_str()))
 	{
-		cout << "file '" <<  i_rFilePath.m_filePath << "' loaded!" << endl;
+		cout << "file '" <<  i_rFilePath << "' loaded!" << endl;
 
 		// TODO: cov trace computation and texture
 		int w = m_uCovInputImage->getWidth();
@@ -385,7 +284,7 @@ void GuiWindow::loadInputCovarFile(const FilePathFormVariable& i_rFilePath)
 
 	}
 	else
-		cerr << "ERROR: loading of file '" << i_rFilePath.m_filePath << "' failed!" << endl;
+		cerr << "ERROR: loading of file '" << i_rFilePath << "' failed!" << endl;
 }
 
 
@@ -396,14 +295,14 @@ void GuiWindow::denoise()
 
 	unique_ptr<IDenoiser> uDenoiser = nullptr;
 
-	if(m_nbOfScales > 1)
-		uDenoiser.reset(new MultiscaleDenoiser(m_nbOfScales));
+	if(m_pipelineParameters.m_denoiserParameters.m_nbOfScales > 1)
+		uDenoiser.reset(new MultiscaleDenoiser(m_pipelineParameters.m_denoiserParameters.m_nbOfScales));
 	else
 		uDenoiser.reset(new Denoiser());
 
 	uDenoiser->setInputs(m_denoiserInputs);
 	uDenoiser->setOutputs(m_denoiserOutputs);
-	uDenoiser->setParameters(m_denoiserParameters);
+	uDenoiser->setParameters(m_pipelineParameters.m_denoiserParameters.m_monoscaleParameters);
 	uDenoiser->setProgressCallback([this](float i_progress) { m_uDenoisingProgressBar->setValue(i_progress); drawAll(); });
 
 	{
@@ -464,22 +363,23 @@ void GuiWindow::buildParametersSubWindow()
 
 	m_uFormHelper->addGroup("Input files");
 	auto inputColorWidget = m_uFormHelper->addVariable("Color image", m_colorInputFilePath);
-	inputColorWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputColorFile(i_rFilePath); });
-	auto inputHistWidget = m_uFormHelper->addVariable("Histogram image", m_histInputFilePath);
-	inputHistWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputHistoFile(i_rFilePath); });
-	auto inputCovWidget = m_uFormHelper->addVariable("Covariance image", m_covInputFilePath);
-	inputCovWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputCovarFile(i_rFilePath); });
+	inputColorWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputColorFile(i_rFilePath.m_filePath); });
+	auto inputHistWidget = m_uFormHelper->addVariable("Histogram image", m_histoInputFilePath);
+	inputHistWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputHistoFile(i_rFilePath.m_filePath); });
+	auto inputCovWidget = m_uFormHelper->addVariable("Covariance image", m_covarInputFilePath);
+	inputCovWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputCovarFile(i_rFilePath.m_filePath); });
 
 	m_uFormHelper->addGroup("Algo parameters");
-	m_uFormHelper->addVariable("Nb of scales", m_nbOfScales);
-	m_uFormHelper->addVariable("Hist distance threshold", m_denoiserParameters.m_histogramDistanceThreshold);
-	m_uFormHelper->addVariable("Use CUDA", m_denoiserParameters.m_useCuda);
-	m_uFormHelper->addVariable("Nb of cores used (0 = default)", m_denoiserParameters.m_nbOfCores);
-	m_uFormHelper->addVariable("Patch radius", m_denoiserParameters.m_patchRadius);
-	m_uFormHelper->addVariable("Search window radius", m_denoiserParameters.m_searchWindowRadius);
-	m_uFormHelper->addVariable("Random pixel order", m_denoiserParameters.m_useRandomPixelOrder);
-	m_uFormHelper->addVariable("Marked pixels skipping probability", m_denoiserParameters.m_markedPixelsSkippingProbability);
-	m_uFormHelper->addVariable("Min eigen value", m_denoiserParameters.m_minEigenValue);
+	m_uFormHelper->addVariable("Nb of scales", m_pipelineParameters.m_denoiserParameters.m_nbOfScales);
+	DenoiserParameters& dp = m_pipelineParameters.m_denoiserParameters.m_monoscaleParameters;
+	m_uFormHelper->addVariable("Hist distance threshold", dp.m_histogramDistanceThreshold);
+	m_uFormHelper->addVariable("Use CUDA", dp.m_useCuda);
+	m_uFormHelper->addVariable("Nb of cores used (0 = default)", dp.m_nbOfCores);
+	m_uFormHelper->addVariable("Patch radius", dp.m_patchRadius);
+	m_uFormHelper->addVariable("Search window radius", dp.m_searchWindowRadius);
+	m_uFormHelper->addVariable("Random pixel order", dp.m_useRandomPixelOrder);
+	m_uFormHelper->addVariable("Marked pixels skipping probability", dp.m_markedPixelsSkippingProbability);
+	m_uFormHelper->addVariable("Min eigen value", dp.m_minEigenValue);
 
 	m_uFormHelper->addGroup("Outputs");
 	auto outputFileWidget = m_uFormHelper->addVariable("Output file", m_outputFilePath);

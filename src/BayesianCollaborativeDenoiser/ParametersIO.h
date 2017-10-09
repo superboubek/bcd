@@ -17,6 +17,7 @@
 namespace bcd
 {
 
+	/// @brief Struct to store the absolute paths to the input files
 	struct InputFileNames
 	{
 		std::string m_colors;
