@@ -117,8 +117,6 @@ GuiWindow::GuiWindow() :
 		m_uDisplaySubWindow(nullptr),
 		m_uDenoisingProgressBar(nullptr),
 		m_hideAllSubWindows(false),
-		m_loadSaveInputFiles(true),
-		m_loadSaveAlgoParams(true),
 		m_inputsAreLoaded(false),
 		m_uColorInputImage(new Deepimf()),
 		m_uNbOfSamplesInputImage(new Deepimf()),
@@ -356,8 +354,8 @@ void GuiWindow::buildParametersSubWindow()
 {
 	m_uParametersSubWindow.reset(m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters"));
 
-	m_uFormHelper->addVariable("Load/Save input files", m_loadSaveInputFiles);
-	m_uFormHelper->addVariable("Load/Save algo parameters", m_loadSaveAlgoParams);
+	m_uFormHelper->addVariable("Load/Save input files", m_pipelineParametersSelector.m_inputFileNames);
+	m_uFormHelper->addVariable("Load/Save algo parameters", m_pipelineParametersSelector.m_denoiserParameters);
 	m_uFormHelper->addButton("Load...", [this]() { loadInputsAndParameters(); });
 	m_uFormHelper->addButton("Save...", [this]() { saveInputsAndParameters(); });
 

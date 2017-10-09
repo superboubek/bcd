@@ -182,9 +182,6 @@ namespace bcd
 
 		bool m_hideAllSubWindows;
 
-		bool m_loadSaveInputFiles;
-		bool m_loadSaveAlgoParams;
-
 		FilePathFormVariable m_colorInputFilePath;
 		FilePathFormVariable m_histoInputFilePath;
 		FilePathFormVariable m_covarInputFilePath;
@@ -196,8 +193,6 @@ namespace bcd
 		PipelineParameters m_pipelineParameters;
 		PipelineParametersSelector m_pipelineParametersSelector;
 
-//		int m_nbOfScales;
-//		DenoiserParameters m_denoiserParameters;
 		DenoiserInputs m_denoiserInputs;
 		DenoiserOutputs m_denoiserOutputs;
 
