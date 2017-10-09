@@ -27,7 +27,7 @@ namespace bcd
 
 	struct PrefilteringParameters
 	{
-		PrefilteringParameters() : m_performSpikeRemoval(true), m_spikeRemovalThresholdStDevFactor(2.f) {}
+		PrefilteringParameters() : m_performSpikeRemoval(true), m_spikeRemovalThresholdStDevFactor(1.5f) {}
 		bool m_performSpikeRemoval;
 		float m_spikeRemovalThresholdStDevFactor;
 	};

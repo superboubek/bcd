@@ -87,6 +87,8 @@ namespace bcd
 		{
 			colorInput,
 			covTraceInput,
+			prefilteredColorInput,
+			prefilteredCovTraceInput,
 			colorOutput,
 			count
 		};
@@ -95,6 +97,8 @@ namespace bcd
 		{
 			colorInput,
 			covTraceInput,
+			prefilteredColorInput,
+			prefilteredCovTraceInput,
 			colorOutput,
 			count
 		};
@@ -140,6 +144,8 @@ namespace bcd
 		bool m_mouseMovedBeforeButtonRelease;
 
 	private:
+		void setTextureData(ETexture i_texture, const DeepImage<float>& i_rImage);
+
 		void loadInputsAndParameters();
 		void loadInputsAndParameters(const std::string& i_rFilePath);
 		void saveInputsAndParameters();
@@ -148,6 +154,9 @@ namespace bcd
 		void loadInputHistoFile(const std::string& i_rFilePath);
 		void loadInputCovarFile(const std::string& i_rFilePath);
 
+		static void computeCovTraceImage(DeepImage<float>& o_rCovTraceImage, const DeepImage<float>& i_rCovImage);
+
+		void prefilter();
 		void denoise();
 
 		void buildParametersSubWindow();
@@ -201,6 +210,13 @@ namespace bcd
 		std::unique_ptr< DeepImage<float> > m_uHistInputImage;
 		std::unique_ptr< DeepImage<float> > m_uCovInputImage;
 		std::unique_ptr< DeepImage<float> > m_uCovTraceInputImage;
+
+		std::unique_ptr< DeepImage<float> > m_uPrefilteredColorInputImage;
+		std::unique_ptr< DeepImage<float> > m_uPrefilteredNbOfSamplesInputImage;
+		std::unique_ptr< DeepImage<float> > m_uPrefilteredHistInputImage;
+		std::unique_ptr< DeepImage<float> > m_uPrefilteredCovInputImage;
+		std::unique_ptr< DeepImage<float> > m_uPrefilteredCovTraceInputImage;
+
 		std::unique_ptr< DeepImage<float> > m_uOutputImage;
 
 

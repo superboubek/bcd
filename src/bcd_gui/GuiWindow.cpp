@@ -118,11 +118,19 @@ GuiWindow::GuiWindow() :
 		m_uDenoisingProgressBar(nullptr),
 		m_hideAllSubWindows(false),
 		m_inputsAreLoaded(false),
+
 		m_uColorInputImage(new Deepimf()),
 		m_uNbOfSamplesInputImage(new Deepimf()),
 		m_uHistInputImage(new Deepimf()),
 		m_uCovInputImage(new Deepimf()),
 		m_uCovTraceInputImage(new Deepimf()),
+
+		m_uPrefilteredColorInputImage(new Deepimf()),
+		m_uPrefilteredNbOfSamplesInputImage(new Deepimf()),
+		m_uPrefilteredHistInputImage(new Deepimf()),
+		m_uPrefilteredCovInputImage(new Deepimf()),
+		m_uPrefilteredCovTraceInputImage(new Deepimf()),
+
 		m_uOutputImage(new Deepimf()),
 		m_currentShaderProgramType(EShaderProgram::empty),
 		m_pCurrentShaderProgram(nullptr),
@@ -163,6 +171,38 @@ void GuiWindow::displayUntilClosed()
 
 	nanogui::mainloop();
 }
+
+void GuiWindow::setTextureData(ETexture i_texture, const DeepImage<float>& i_rImage)
+{
+	GLint internalFormat;
+	GLenum format;
+	switch(i_rImage.getDepth())
+	{
+	case 1:
+		internalFormat = GL_R32F;
+		format = GL_RED;
+		break;
+	case 3:
+		internalFormat = GL_RGBA32F;
+		format = GL_RGB;
+		break;
+	default:
+		cerr << "Error: call to setTextureData with image which depth is not 1 or 3 (depth = " << i_rImage.getDepth() << ")" << endl;
+		return;
+	}
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(i_texture)]);
+	glTexImage2D(
+			GL_TEXTURE_2D, 0, internalFormat,
+			i_rImage.getWidth(),
+			i_rImage.getHeight(),
+			0, format, GL_FLOAT,
+			i_rImage.getDataPtr()
+			);
+	m_displayChanged = true;
+}
+
 
 void GuiWindow::loadInputsAndParameters()
 {
@@ -207,16 +247,7 @@ void GuiWindow::loadInputColorFile(const string& i_rFilePath)
 	if(ImageIO::loadEXR(*m_uColorInputImage, i_rFilePath.c_str()))
 	{
 		cout << "file '" <<  i_rFilePath << "' loaded!" << endl;
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorInput)]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-				m_uColorInputImage->getWidth(),
-				m_uColorInputImage->getHeight(),
-				0, GL_RGB, GL_FLOAT,
-				m_uColorInputImage->getDataPtr());
-		m_displayChanged = true;
-
+		setTextureData(ETexture::colorInput, *m_uColorInputImage);
 	}
 	else
 		cerr << "ERROR: loading of file '" << i_rFilePath << "' failed!" << endl;
@@ -258,33 +289,55 @@ void GuiWindow::loadInputCovarFile(const string& i_rFilePath)
 	{
 		cout << "file '" <<  i_rFilePath << "' loaded!" << endl;
 
-		// TODO: cov trace computation and texture
-		int w = m_uCovInputImage->getWidth();
-		int h = m_uCovInputImage->getHeight();
-		m_uCovTraceInputImage->resize(w, h, 1);
-		auto covIt = m_uCovInputImage->begin();
-		auto covItEnd = m_uCovInputImage->end();
-		auto covTraceIt = m_uCovTraceInputImage->begin();
-		for(; covIt != covItEnd; ++covIt, ++covTraceIt)
-			covTraceIt[0] = sqrt(
-					covIt[int(ESymmetricMatrix3x3Data::e_xx)] +
-					covIt[int(ESymmetricMatrix3x3Data::e_yy)] +
-					covIt[int(ESymmetricMatrix3x3Data::e_zz)]);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::covTraceInput)]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F,
-				m_uCovTraceInputImage->getWidth(),
-				m_uCovTraceInputImage->getHeight(),
-				0, GL_RED, GL_FLOAT,
-				m_uCovTraceInputImage->getDataPtr());
-		m_displayChanged = true;
-
+		computeCovTraceImage(*m_uCovTraceInputImage, *m_uCovInputImage);
+		setTextureData(ETexture::covTraceInput, *m_uCovTraceInputImage);
 	}
 	else
 		cerr << "ERROR: loading of file '" << i_rFilePath << "' failed!" << endl;
 }
 
+void GuiWindow::computeCovTraceImage(DeepImage<float>& o_rCovTraceImage, const DeepImage<float>& i_rCovImage)
+{
+	assert(i_rCovImage.getDepth() == 6);
+
+	int w = i_rCovImage.getWidth();
+	int h = i_rCovImage.getHeight();
+	o_rCovTraceImage.resize(w, h, 1);
+	auto covIt = i_rCovImage.begin();
+	auto covItEnd = i_rCovImage.end();
+	auto covTraceIt = o_rCovTraceImage.begin();
+	for(; covIt != covItEnd; ++covIt, ++covTraceIt)
+		covTraceIt[0] = sqrt(
+				covIt[int(ESymmetricMatrix3x3Data::e_xx)] +
+				covIt[int(ESymmetricMatrix3x3Data::e_yy)] +
+				covIt[int(ESymmetricMatrix3x3Data::e_zz)]);
+}
+
+void GuiWindow::prefilter()
+{
+	*m_uPrefilteredColorInputImage = *m_uColorInputImage;
+	*m_uPrefilteredNbOfSamplesInputImage = *m_uNbOfSamplesInputImage;
+	*m_uPrefilteredHistInputImage = *m_uHistInputImage;
+	*m_uPrefilteredCovInputImage = *m_uCovInputImage;
+
+	SpikeRemovalFilter::filter(
+			*m_uPrefilteredColorInputImage,
+			*m_uPrefilteredNbOfSamplesInputImage,
+			*m_uPrefilteredHistInputImage,
+			*m_uPrefilteredCovInputImage,
+			m_pipelineParameters.m_prefilteringParameters.m_spikeRemovalThresholdStDevFactor);
+
+	setTextureData(ETexture::prefilteredColorInput, *m_uPrefilteredColorInputImage);
+
+	computeCovTraceImage(*m_uPrefilteredCovTraceInputImage, *m_uPrefilteredCovInputImage);
+	setTextureData(ETexture::prefilteredCovTraceInput, *m_uPrefilteredCovTraceInputImage);
+
+	if(m_currentDisplayType == EDisplayType::covTraceInput)
+		m_currentDisplayType = EDisplayType::prefilteredCovTraceInput;
+	else
+		m_currentDisplayType = EDisplayType::prefilteredColorInput;
+
+}
 
 void GuiWindow::denoise()
 {
@@ -297,6 +350,22 @@ void GuiWindow::denoise()
 		uDenoiser.reset(new MultiscaleDenoiser(m_pipelineParameters.m_denoiserParameters.m_nbOfScales));
 	else
 		uDenoiser.reset(new Denoiser());
+
+	if(m_pipelineParameters.m_prefilteringParameters.m_performSpikeRemoval)
+	{
+		prefilter();
+		m_denoiserInputs.m_pColors = m_uPrefilteredColorInputImage.get();
+		m_denoiserInputs.m_pHistograms = m_uPrefilteredHistInputImage.get();
+		m_denoiserInputs.m_pNbOfSamples = m_uPrefilteredNbOfSamplesInputImage.get();
+		m_denoiserInputs.m_pSampleCovariances = m_uPrefilteredCovInputImage.get();
+	}
+	else
+	{
+		m_denoiserInputs.m_pColors = m_uColorInputImage.get();
+		m_denoiserInputs.m_pHistograms = m_uHistInputImage.get();
+		m_denoiserInputs.m_pNbOfSamples = m_uNbOfSamplesInputImage.get();
+		m_denoiserInputs.m_pSampleCovariances = m_uCovInputImage.get();
+	}
 
 	uDenoiser->setInputs(m_denoiserInputs);
 	uDenoiser->setOutputs(m_denoiserOutputs);
@@ -316,14 +385,7 @@ void GuiWindow::denoise()
 
 	m_uDenoisingProgressBar->setValue(1.f);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_textureIds[size_t(ETexture::colorOutput)]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-			m_uOutputImage->getWidth(),
-			m_uOutputImage->getHeight(),
-			0, GL_RGB, GL_FLOAT,
-			m_uOutputImage->getDataPtr());
-	m_displayChanged = true;
+	setTextureData(ETexture::colorOutput, *m_uOutputImage);
 
 	m_currentDisplayType = EDisplayType::colorOutput;
 
@@ -355,6 +417,7 @@ void GuiWindow::buildParametersSubWindow()
 	m_uParametersSubWindow.reset(m_uFormHelper->addWindow(Eigen::Vector2i(10, 10), "BCD parameters"));
 
 	m_uFormHelper->addVariable("Load/Save input files", m_pipelineParametersSelector.m_inputFileNames);
+	m_uFormHelper->addVariable("Load/Save prefiltering params", m_pipelineParametersSelector.m_prefilteringParameters);
 	m_uFormHelper->addVariable("Load/Save algo parameters", m_pipelineParametersSelector.m_denoiserParameters);
 	m_uFormHelper->addButton("Load...", [this]() { loadInputsAndParameters(); });
 	m_uFormHelper->addButton("Save...", [this]() { saveInputsAndParameters(); });
@@ -366,6 +429,11 @@ void GuiWindow::buildParametersSubWindow()
 	inputHistWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputHistoFile(i_rFilePath.m_filePath); });
 	auto inputCovWidget = m_uFormHelper->addVariable("Covariance image", m_covarInputFilePath);
 	inputCovWidget->setCallback([this](const FilePathFormVariable& i_rFilePath) { loadInputCovarFile(i_rFilePath.m_filePath); });
+
+	m_uFormHelper->addGroup("Spike-removal prefiltering parameters");
+	m_uFormHelper->addVariable("Perform spike removal", m_pipelineParameters.m_prefilteringParameters.m_performSpikeRemoval);
+	m_uFormHelper->addVariable("Threshold (st. dev. factor)", m_pipelineParameters.m_prefilteringParameters.m_spikeRemovalThresholdStDevFactor);
+	m_uFormHelper->addButton("Apply spike removal", [this]() { prefilter(); });
 
 	m_uFormHelper->addGroup("Algo parameters");
 	m_uFormHelper->addVariable("Nb of scales", m_pipelineParameters.m_denoiserParameters.m_nbOfScales);
@@ -424,12 +492,14 @@ void GuiWindow::buildDisplaySubWindow()
 	m_uFormHelper->addGroup("Current display");
 	m_uFormHelper->addButton("Previous", [this](){ previousDisplayType(); });
 	m_uFormHelper->addVariable("Display", m_currentDisplayType)
-			->setItems({ "color input", "trace of covariance input", "color output" });
+			->setItems({ "color input", "variance input", "pref. color input", "pref. variance input", "color output" });
 	m_uFormHelper->addButton("Next", [this](){ nextDisplayType(); });
 
 	m_uFormHelper->addGroup("Visibility of displays");
 	m_uFormHelper->addVariable("Input color", m_displayTypeIsVisible[size_t(EDisplayType::colorInput)]);
 	m_uFormHelper->addVariable("Input covariance", m_displayTypeIsVisible[size_t(EDisplayType::covTraceInput)]);
+	m_uFormHelper->addVariable("Prefiltered input color", m_displayTypeIsVisible[size_t(EDisplayType::prefilteredColorInput)]);
+	m_uFormHelper->addVariable("Prefiltered input covariance", m_displayTypeIsVisible[size_t(EDisplayType::prefilteredCovTraceInput)]);
 	m_uFormHelper->addVariable("Output", m_displayTypeIsVisible[size_t(EDisplayType::colorOutput)]);
 
 	m_uFormHelper->addGroup("Tonemapping parameters");
@@ -661,10 +731,13 @@ GuiWindow::EShaderProgram GuiWindow::getShaderProgramFromDisplayType(EDisplayTyp
 {
 	switch (i_displayType)
 	{
-	case EDisplayType::colorInput: return EShaderProgram::colorImageTonemapped;
-//	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageTonemapped;
-	case EDisplayType::covTraceInput: return EShaderProgram::scalarImageHelix;
-	case EDisplayType::colorOutput: return EShaderProgram::colorImageTonemapped;
+	case EDisplayType::colorInput:
+	case EDisplayType::prefilteredColorInput:
+	case EDisplayType::colorOutput:
+		return EShaderProgram::colorImageTonemapped;
+	case EDisplayType::covTraceInput:
+	case EDisplayType::prefilteredCovTraceInput:
+		return EShaderProgram::scalarImageHelix; // or scalarImageTonemapped
 	default:
 		assert(false);
 		return EShaderProgram::empty;
@@ -686,6 +759,8 @@ GuiWindow::ETexture GuiWindow::getTextureFromDisplayType(EDisplayType i_displayT
 	{
 	case EDisplayType::colorInput: return ETexture::colorInput;
 	case EDisplayType::covTraceInput: return ETexture::covTraceInput;
+	case EDisplayType::prefilteredColorInput: return ETexture::prefilteredColorInput;
+	case EDisplayType::prefilteredCovTraceInput: return ETexture::prefilteredCovTraceInput;
 	case EDisplayType::colorOutput: return ETexture::colorOutput;
 	default:
 		assert(false);
@@ -707,6 +782,12 @@ void GuiWindow::onDisplayTypeChange()
 		break;
 	case EDisplayType::covTraceInput:
 		pCurrentImage = m_uCovTraceInputImage.get();
+		break;
+	case EDisplayType::prefilteredColorInput:
+		pCurrentImage = m_uPrefilteredColorInputImage.get();
+		break;
+	case EDisplayType::prefilteredCovTraceInput:
+		pCurrentImage = m_uPrefilteredCovTraceInputImage.get();
 		break;
 	case EDisplayType::colorOutput:
 		pCurrentImage = m_uOutputImage.get();
@@ -796,6 +877,8 @@ bool GuiWindow::isLoaded(EDisplayType i_displayType)
 	{
 	case EDisplayType::colorInput: return !m_uColorInputImage->isEmpty();
 	case EDisplayType::covTraceInput: return !m_uCovInputImage->isEmpty();
+	case EDisplayType::prefilteredColorInput: return !m_uPrefilteredColorInputImage->isEmpty();
+	case EDisplayType::prefilteredCovTraceInput: return !m_uPrefilteredCovInputImage->isEmpty();
 	case EDisplayType::colorOutput: return !m_uOutputImage->isEmpty();
 	}
 	return false;
