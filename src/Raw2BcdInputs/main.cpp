@@ -176,11 +176,11 @@ namespace bcd
 						outputColor.get(line, col, channelIndex) += sample[channelIndex];
 						{ // fill histogram; code refactored from Ray Histogram Fusion PBRT code
 							float value = sample[channelIndex];
-							value = value > 0 ? value : 0;
+							value = (value > 0 ? value : 0);
 							if(programArgs.m_histogramGamma > 1)
 								value = pow(value, 1.f / programArgs.m_histogramGamma); // exponential scaling
 							if(programArgs.m_histogramMaxValue > 0)
-								value  = value / programArgs.m_histogramMaxValue; // normalize to the maximum value
+								value = (value / programArgs.m_histogramMaxValue); // normalize to the maximum value
 							value = value > g_satureLevelGamma ? g_satureLevelGamma : value;
 
 							binFloatIndex = value * (programArgs.m_histogramNbOfBins - 2);

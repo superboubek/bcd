@@ -55,6 +55,7 @@ SET(src_files
 	MultiscaleDenoiser.cpp
 	SpikeRemovalFilter.cpp
 	ParametersIO.cpp
+	SamplesAccumulator.cpp
 	${common_folder}/Chronometer.cpp
 	${common_folder}/ImageIO.cpp
 	${common_folder}/Utils.cpp
@@ -68,6 +69,7 @@ SET(header_files
 	MultiscaleDenoiser.h
 	SpikeRemovalFilter.h
 	ParametersIO.h
+	SamplesAccumulator.h
 	${common_folder}/DeepImage.h
 	${common_folder}/Chronometer.h
 	${common_folder}/ImageIO.h
