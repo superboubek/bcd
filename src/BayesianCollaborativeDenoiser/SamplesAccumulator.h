@@ -25,7 +25,7 @@ namespace bcd
 				m_maxValue(2.5f) {}
 
 		int m_nbOfBins;
-		float m_gamma;
+		float m_gamma; ///< exponent for the exponential size increase of histogram bins
 		float m_maxValue;
 	};
 
@@ -53,13 +53,22 @@ namespace bcd
 
 		SamplesStatisticsImages getSamplesStatistics() const;
 
+		/// @brief Returns the accumulated sample statistics
+		///
+		/// This function performs a std::move on the internal arrays of the class,
+		/// contrary to SamplesStatisticsImages::getSamplesStatistics which performs a copy.
+		/// After this call, the SamplesAccumulator cannot be used to accumulate more samples, and should be destroyed.
 		SamplesStatisticsImages extractSamplesStatistics();
+
+	private:
+		void computeSampleStatistics(SamplesStatisticsImages& io_sampleStats) const;
 
 	private:
 		int m_width;
 		int m_height;
 		HistogramParameters m_histogramParameters;
 		SamplesStatisticsImages m_samplesStatisticsImages;
+		DeepImage<float> m_squaredWeightSumsImage;
 
 		bool m_isValid; ///< If you call extractSamplesStatistics, the object becomes invalid and should be destroyed
 	};
