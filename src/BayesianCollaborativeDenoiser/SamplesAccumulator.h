@@ -31,7 +31,12 @@ namespace bcd
 
 	struct SamplesStatisticsImages
 	{
+		SamplesStatisticsImages() = default;
 		SamplesStatisticsImages(int i_width, int i_height, int i_nbOfBins);
+		SamplesStatisticsImages(const SamplesStatisticsImages&) = default;
+		SamplesStatisticsImages(SamplesStatisticsImages&&) = default;
+		SamplesStatisticsImages& operator=(const SamplesStatisticsImages&) = default;
+		SamplesStatisticsImages& operator=(SamplesStatisticsImages&&) = default;
 
 		DeepImage<float> m_nbOfSamplesImage;
 		DeepImage<float> m_meanImage;

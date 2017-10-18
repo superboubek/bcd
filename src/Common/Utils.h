@@ -24,9 +24,14 @@ namespace bcd
 
 	public:
 		static bool separateNbOfSamplesFromHistogram(
-				DeepImage<float>& o_rHistImage,
+				DeepImage<float>& o_rHistoImage,
 				DeepImage<float>& o_rNbOfSamplesImage,
-				const DeepImage<float>& i_rHistAndNbOfSamplesImage
+				const DeepImage<float>& i_rHistoAndNbOfSamplesImage
+		);
+
+		static DeepImage<float> mergeHistogramAndNbOfSamples(
+				const DeepImage<float>& i_rHistoImage,
+				const DeepImage<float>& i_rNbOfSamplesImage
 		);
 
 		static std::string extractFolderPath(const std::string& i_rFilePath);

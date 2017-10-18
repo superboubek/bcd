@@ -11,6 +11,7 @@
 #include "DeepImage.h"
 
 #include <cstring>
+#include <cassert>
 
 using namespace std;
 
@@ -18,30 +19,63 @@ namespace bcd
 {
 
 	bool Utils::separateNbOfSamplesFromHistogram(
-			Deepimf& o_rHistImage,
+			Deepimf& o_rHistoImage,
 			Deepimf& o_rNbOfSamplesImage,
-			const Deepimf& i_rHistAndNbOfSamplesImage)
+			const Deepimf& i_rHistoAndNbOfSamplesImage)
 	{
-		int w = i_rHistAndNbOfSamplesImage.getWidth();
-		int h = i_rHistAndNbOfSamplesImage.getHeight();
-		int d = i_rHistAndNbOfSamplesImage.getDepth() - 1;
+		int w = i_rHistoAndNbOfSamplesImage.getWidth();
+		int h = i_rHistoAndNbOfSamplesImage.getHeight();
+		int d = i_rHistoAndNbOfSamplesImage.getDepth() - 1;
 
-		o_rHistImage.resize(w, h, d);
+		o_rHistoImage.resize(w, h, d);
 		o_rNbOfSamplesImage.resize(w, h, 1);
 
-		size_t histDataSize = d * sizeof(float);
-		ImfIt histIt = o_rHistImage.begin();
+		size_t histoDataSize = d * sizeof(float);
+		ImfIt histoIt = o_rHistoImage.begin();
 		ImfIt nbOfSamplesIt = o_rNbOfSamplesImage.begin();
-		ImfConstIt histAndNbOfSamplesIt = i_rHistAndNbOfSamplesImage.begin();
-		ImfConstIt histAndNbOfSamplesItEnd = i_rHistAndNbOfSamplesImage.end();
+		ImfConstIt histoAndNbOfSamplesIt = i_rHistoAndNbOfSamplesImage.begin();
+		ImfConstIt histoAndNbOfSamplesItEnd = i_rHistoAndNbOfSamplesImage.end();
 
-		for( ; histAndNbOfSamplesIt != histAndNbOfSamplesItEnd; ++histIt, ++nbOfSamplesIt, ++histAndNbOfSamplesIt)
+		for( ; histoAndNbOfSamplesIt != histoAndNbOfSamplesItEnd; ++histoIt, ++nbOfSamplesIt, ++histoAndNbOfSamplesIt)
 		{
-			memcpy(*histIt, *histAndNbOfSamplesIt, histDataSize);
-			nbOfSamplesIt[0] = histAndNbOfSamplesIt[d];
+			memcpy(*histoIt, *histoAndNbOfSamplesIt, histoDataSize);
+			nbOfSamplesIt[0] = histoAndNbOfSamplesIt[d];
 		}
+
 		return true;
 	}
+
+	Deepimf Utils::mergeHistogramAndNbOfSamples(
+			const Deepimf& i_rHistoImage,
+			const Deepimf& i_rNbOfSamplesImage)
+	{
+		Deepimf histoAndNbOfSamplesImage;
+
+		int w = i_rHistoImage.getWidth();
+		int h = i_rHistoImage.getHeight();
+		int d = i_rHistoImage.getDepth();
+
+		assert(i_rNbOfSamplesImage.getWidth() == w);
+		assert(i_rNbOfSamplesImage.getHeight() == h);
+		assert(i_rNbOfSamplesImage.getDepth() == 1);
+
+		histoAndNbOfSamplesImage.resize(w, h, d + 1);
+
+		size_t histoDataSize = d * sizeof(float);
+		ImfConstIt histoIt = i_rHistoImage.begin();
+		ImfConstIt nbOfSamplesIt = i_rNbOfSamplesImage.begin();
+		ImfIt histoAndNbOfSamplesIt = histoAndNbOfSamplesImage.begin();
+		ImfIt histoAndNbOfSamplesItEnd = histoAndNbOfSamplesImage.end();
+
+		for( ; histoAndNbOfSamplesIt != histoAndNbOfSamplesItEnd; ++histoIt, ++nbOfSamplesIt, ++histoAndNbOfSamplesIt)
+		{
+			memcpy(*histoAndNbOfSamplesIt, *histoIt, histoDataSize);
+			histoAndNbOfSamplesIt[d] = nbOfSamplesIt[0];
+		}
+
+		return histoAndNbOfSamplesImage;
+	}
+
 
 	string Utils::extractFolderPath(const string& i_rFilePath)
 	{

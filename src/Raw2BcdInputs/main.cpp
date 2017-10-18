@@ -14,13 +14,12 @@
 // ---------------------------------------------------------------------------------------------------
 
 
+#include "SamplesAccumulator.h"
 #include "ImageIO.h"
 #include "DeepImage.h"
 
 #include "CovarianceMatrix.h"
 #include "Utils.h"
-
-#include "io_exr.h"
 
 #include <iostream>
 #include <ctime>
@@ -151,16 +150,11 @@ namespace bcd
 		inputFile.read(reinterpret_cast<char*>(&header), sizeof(RawFileHeader));
 		printHeader(header);
 
-		Deepimf outputColor(header.width, header.height, 3);
-		Deepimf outputHistogram(header.width, header.height, 3 * programArgs.m_histogramNbOfBins + 1); // + 1 for nb of samples as last channel
-		Deepimf outputCovariance(header.width, header.height, 6);
-		outputColor.fill(0.f);
-
-		int floorBinIndex;
-		int ceilBinIndex;
-		float binFloatIndex;
-		float floorBinWeight;
-		float ceilBinWeight;
+		HistogramParameters histoParams;
+		histoParams.m_nbOfBins = programArgs.m_histogramNbOfBins;
+		histoParams.m_gamma = programArgs.m_histogramGamma;
+		histoParams.m_maxValue = programArgs.m_histogramMaxValue;
+		SamplesAccumulator samplesAccumulator(header.width, header.height, histoParams);
 
 		float sample[4]; // assumes nbOfChannels can be only 3 or 4
 		streamsize sampleSize = header.nbOfChannels * sizeof(float);
@@ -171,94 +165,20 @@ namespace bcd
 				for(int32_t sampleIndex = 0; sampleIndex < header.nbOfSamples; ++sampleIndex)
 				{
 					inputFile.read(reinterpret_cast<char*>(sample), sampleSize);
-					for(int32_t channelIndex = 0; channelIndex < header.nbOfChannels; ++channelIndex)
-					{
-						outputColor.get(line, col, channelIndex) += sample[channelIndex];
-						{ // fill histogram; code refactored from Ray Histogram Fusion PBRT code
-							float value = sample[channelIndex];
-							value = (value > 0 ? value : 0);
-							if(programArgs.m_histogramGamma > 1)
-								value = pow(value, 1.f / programArgs.m_histogramGamma); // exponential scaling
-							if(programArgs.m_histogramMaxValue > 0)
-								value = (value / programArgs.m_histogramMaxValue); // normalize to the maximum value
-							value = value > g_satureLevelGamma ? g_satureLevelGamma : value;
-
-							binFloatIndex = value * (programArgs.m_histogramNbOfBins - 2);
-							floorBinIndex = int(binFloatIndex);
-
-							if(floorBinIndex < programArgs.m_histogramNbOfBins - 2) // in bounds
-							{
-								ceilBinIndex = floorBinIndex + 1;
-								ceilBinWeight = binFloatIndex - floorBinIndex;
-								floorBinWeight = 1.0f - ceilBinWeight;
-							}
-							else
-							{ //out of bounds... v >= 1
-								floorBinIndex = programArgs.m_histogramNbOfBins - 2;
-								ceilBinIndex = floorBinIndex + 1;
-								ceilBinWeight = (value - 1.0f) / (g_satureLevelGamma - 1.f);
-								floorBinWeight = 1.0f - ceilBinWeight;
-							}
-							outputHistogram.get(line, col, channelIndex * programArgs.m_histogramNbOfBins + floorBinIndex) += floorBinWeight;
-							outputHistogram.get(line, col, channelIndex * programArgs.m_histogramNbOfBins + ceilBinIndex) += ceilBinWeight;
-						}
-					}
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xx)) += sample[0] * sample[0];
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_yy)) += sample[1] * sample[1];
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_zz)) += sample[2] * sample[2];
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_yz)) += sample[1] * sample[2];
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xz)) += sample[0] * sample[2];
-					outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xy)) += sample[0] * sample[1];
+					samplesAccumulator.addSample(line, col, sample[0], sample[1], sample[2]);
 				}
 			}
 		}
 
-		float nbOfSamples = header.nbOfSamples;
-		float invNbOfSamples = 1.f / nbOfSamples;
-		float biasCorrectionFactor = nbOfSamples / (nbOfSamples - 1);
-		float colorValue[3];
+		SamplesStatisticsImages samplesStats = samplesAccumulator.extractSamplesStatistics();
+		Deepimf histoAndNbOfSamplesImage = Utils::mergeHistogramAndNbOfSamples(samplesStats.m_histoImage, samplesStats.m_nbOfSamplesImage);
 
-		outputColor.isotropicalScale(invNbOfSamples);
+		samplesStats.m_histoImage.clearAndFreeMemory();
+		samplesStats.m_nbOfSamplesImage.clearAndFreeMemory();
 
-		for(int32_t line = 0; line < header.height; ++line)
-		{
-			for(int32_t col = 0; col < header.width; ++col)
-			{
-				outputHistogram.set(line, col, 3 * programArgs.m_histogramNbOfBins, nbOfSamples);
-
-				colorValue[0] = outputColor.get(line, col, 0);
-				colorValue[1] = outputColor.get(line, col, 1);
-				colorValue[2] = outputColor.get(line, col, 2);
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xx));
-					covValue = (covValue * invNbOfSamples - colorValue[0] * colorValue[0]) * biasCorrectionFactor;
-				}
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_yy));
-					covValue = (covValue * invNbOfSamples - colorValue[1] * colorValue[1]) * biasCorrectionFactor;
-				}
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_zz));
-					covValue = (covValue * invNbOfSamples - colorValue[2] * colorValue[2]) * biasCorrectionFactor;
-				}
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_yz));
-					covValue = (covValue * invNbOfSamples - colorValue[1] * colorValue[2]) * biasCorrectionFactor;
-				}
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xz));
-					covValue = (covValue * invNbOfSamples - colorValue[0] * colorValue[2]) * biasCorrectionFactor;
-				}
-				{
-					float& covValue = outputCovariance.get(line, col, static_cast<int>(ESymmetricMatrix3x3Data::e_xy));
-					covValue = (covValue * invNbOfSamples - colorValue[0] * colorValue[1]) * biasCorrectionFactor;
-				}
-			}
-		}
-
-		ImageIO::writeEXR(outputColor, programArgs.m_outputColorFilePath.c_str());
-		ImageIO::writeMultiChannelsEXR(outputCovariance, programArgs.m_outputCovarianceFilePath.c_str());
-		ImageIO::writeMultiChannelsEXR(outputHistogram, programArgs.m_outputHistogramFilePath.c_str());
+		ImageIO::writeEXR(samplesStats.m_meanImage, programArgs.m_outputColorFilePath.c_str());
+		ImageIO::writeMultiChannelsEXR(samplesStats.m_covarImage, programArgs.m_outputCovarianceFilePath.c_str());
+		ImageIO::writeMultiChannelsEXR(histoAndNbOfSamplesImage, programArgs.m_outputHistogramFilePath.c_str());
 
 		return 0;
 	}
