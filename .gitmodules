@@ -1,15 +1,15 @@
-[submodule "ext/nanogui"]
-	path = ext/nanogui
+[submodule "src/ext/nanogui"]
+	path = src/ext/nanogui
 	url = https://github.com/wjakob/nanogui
-[submodule "ext/eigen"]
-	path = ext/eigen
+[submodule "src/ext/eigen"]
+	path = src/ext/eigen
 	url = https://github.com/libigl/eigen.git
-[submodule "ext/openexr"]
-	path = ext/openexr
+[submodule "src/ext/openexr"]
+	path = src/ext/openexr
 	url = https://github.com/openexr/openexr
-[submodule "ext/json"]
-	path = ext/json
+[submodule "src/ext/json"]
+	path = src/ext/json
 	url = https://github.com/nlohmann/json
-[submodule "ext/zlib"]
-	path = ext/zlib
+[submodule "src/ext/zlib"]
+	path = src/ext/zlib
 	url = https://github.com/madler/zlib.git
