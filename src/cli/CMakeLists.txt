@@ -6,7 +6,7 @@
 # All rights reserved. Use of this source code is governed by a
 # BSD-style license that can be found in the LICENSE.txt file.
 
-SET(target_name bcd_cli)
+SET(target_name ${exe_bcd_cli})
 
 SET(src_files
 	main.cpp
@@ -20,6 +20,7 @@ ADD_EXECUTABLE(${target_name} ${src_files} ${header_files} ${header_implementati
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 
-TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${bcd_library})
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${lib_bcd_core})
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${lib_bcd_io})
 
 INSTALL(TARGETS ${target_name} RUNTIME DESTINATION bin)

@@ -14,7 +14,7 @@
 # ---------------------------------------------------------------------------------------------------
 
 
-SET(target_name bcd_gui)
+SET(target_name ${exe_bcd_gui})
 
 SET(src_files
 	main.cpp
@@ -30,7 +30,8 @@ ADD_EXECUTABLE(${target_name} ${src_files} ${header_files} ${header_implementati
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 
-TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${bcd_library})
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${lib_bcd_core})
+TARGET_LINK_LIBRARIES(${target_name} PRIVATE ${lib_bcd_io})
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE NanoguiTarget)
 
 INSTALL(TARGETS ${target_name} RUNTIME DESTINATION bin)

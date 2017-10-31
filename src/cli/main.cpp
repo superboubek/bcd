@@ -16,6 +16,7 @@
 #include "CudaHistogramDistance.h"
 #endif
 
+#include "ParametersIO.h"
 #include "ImageIO.h"
 #include "DeepImage.h"
 
@@ -97,12 +98,13 @@ namespace bcd
 		cout << "Bayesian Collaborative Denoising"<< endl << endl;
 		cout << "Usage: " << g_pProgramPath << " <arguments list>" << endl;
 		cout << "Only EXR images are supported." << endl << endl;
-		cout << "Required arguments list:" << endl;
+		cout << "Required arguments list (unless a pipeline file is provided and contains this data):" << endl;
 		cout << "    -o <output>          The file path to the output image" << endl;
 		cout << "    -i <input>           The file path to the input image" << endl;
 		cout << "    -h <hist>            The file path to the input histograms buffer" << endl;
 		cout << "    -c <cov>             The file path to the input covariance matrices buffer" << endl;
 		cout << "Optional arguments list:" << endl;
+		cout << "    -a <file>            The file path to the .bcd.json file containing arguments for the program" << endl;
 		cout << "    -d <float>           Histogram patch distance threshold (default: " << defaultProgramArgs.m_histogramPatchDistanceThreshold << ")" << endl;
 		cout << "    -b <int>             Radius of search windows (default: " << defaultProgramArgs.m_searchWindowRadius << ")" << endl;
 		cout << "    -w <int>             Radius of patches (default: " << defaultProgramArgs.m_patchRadius << ")" << endl;

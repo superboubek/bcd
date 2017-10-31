@@ -37,6 +37,7 @@ namespace bcd
 		SamplesStatisticsImages(SamplesStatisticsImages&&) = default;
 		SamplesStatisticsImages& operator=(const SamplesStatisticsImages&) = default;
 		SamplesStatisticsImages& operator=(SamplesStatisticsImages&&) = default;
+		~SamplesStatisticsImages() = default;
 
 		DeepImage<float> m_nbOfSamplesImage;
 		DeepImage<float> m_meanImage;
