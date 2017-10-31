@@ -86,6 +86,7 @@ IF(CUDA_FOUND)
 		${bcd_core_include_folder}/CudaHistogramDistance.h
 		${bcd_core_include_folder}/CudaUtils.h
 	)
+	CUDA_INCLUDE_DIRECTORIES(${bcd_core_include_folder}) # sadly, the TARGET_INCLUDE_DIRECTORIES a few lines below does not work with CUDA, see https://cmake.org/Bug/view.php?id=14201
 	CUDA_ADD_LIBRARY(${target_name} ${src_files} ${header_files} ${header_implementation_files} STATIC)
 	TARGET_COMPILE_DEFINITIONS(${target_name} PRIVATE FOUND_CUDA)
 ELSE(CUDA_FOUND)
@@ -93,7 +94,7 @@ ELSE(CUDA_FOUND)
 ENDIF(CUDA_FOUND)
 
 
-TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC ${bcd_include_folder}/core)
+TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC ${bcd_core_include_folder})
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
 TARGET_LINK_LIBRARIES(${target_name} PUBLIC OpenMP)

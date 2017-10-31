@@ -12,7 +12,6 @@
 
 #include "DeepImage.h"
 
-#include "ImageIO.h" // temporary
 #include <sstream>
 
 #include <iostream>
