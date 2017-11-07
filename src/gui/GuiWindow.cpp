@@ -480,7 +480,7 @@ void GuiWindow::buildParametersSubWindow()
 //	inputCovWidget->callback();
 //	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
 //	outputFileWidget->callback();
-	loadInputsAndParameters("/data/boughida/projects/bcd/data/inputs/tests/test.bcd.json");
+	loadInputsAndParameters("/data/boughida/projects/bcd/data/inputs/json/test.bcd.json");
 	// end of tmp adds to ease testing
 
 }

@@ -11,7 +11,6 @@
 
 #include "IDenoiser.h"
 
-#include <vector>
 #include <string>
 
 namespace bcd
