@@ -23,7 +23,7 @@ namespace bcd
 	class MultiscaleDenoiser : public IDenoiser
 	{
 	public:
-		MultiscaleDenoiser(int i_nbOfScales) : m_nbOfScales(i_nbOfScales) {}
+		MultiscaleDenoiser(int i_nbOfScales) : IDenoiser(), m_nbOfScales(i_nbOfScales) {}
 		virtual ~MultiscaleDenoiser() {}
 
 	public: // public methods

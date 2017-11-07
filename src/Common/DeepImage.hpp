@@ -516,6 +516,13 @@ namespace bcd
 	}
 
 	template < typename scalar >
+	inline void DeepImage< scalar >::clearAndFreeMemory()
+	{
+		m_width = m_height = m_depth = m_widthTimesDepth = 0;
+		std::vector< scalar >().swap(m_data); // swap trick to free memory
+	}
+
+	template < typename scalar >
 	inline typename DeepImage< scalar >::iterator DeepImage< scalar >::begin()
 	{
 		return DeepImage< scalar >::iterator(m_data.data(), m_depth);

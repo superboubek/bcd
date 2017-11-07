@@ -237,6 +237,8 @@ namespace bcd
 
 		bool isEmpty() const;
 
+		void clearAndFreeMemory();
+
 		iterator begin();
 		iterator end();
 		const_iterator begin() const;

@@ -17,6 +17,7 @@
 
 #include <iostream>
 
+#include <cassert>
 
 //#define SAVE_ADDITIONAL_OUTPUTS
 #ifdef SAVE_ADDITIONAL_OUTPUTS
@@ -30,6 +31,14 @@ namespace bcd
 
 	bool MultiscaleDenoiser::denoise()
 	{
+		{
+			Denoiser denoiser;
+			denoiser.setInputs(m_inputs);
+			denoiser.setParameters(m_parameters);
+			denoiser.setOutputs(m_outputs);
+			if(!denoiser.inputsOutputsAreOk())
+				return false;
+		}
 		vector< unique_ptr< Deepimf > > additionalColorImages = generateDownscaledAverageImages(*m_inputs.m_pColors, m_nbOfScales - 1);
 		vector< unique_ptr< Deepimf > > additionalNbOfSamplesImages = generateDownscaledSumImages(*m_inputs.m_pNbOfSamples, m_nbOfScales - 1);
 		vector< unique_ptr< Deepimf > > additionalHistogramImages = generateDownscaledSumImages(*m_inputs.m_pHistograms, m_nbOfScales - 1);
@@ -74,6 +83,7 @@ namespace bcd
 			denoiser.setInputs(inputsArray[m_nbOfScales - 1]);
 			denoiser.setOutputs(outputsArray[m_nbOfScales - 1]);
 			denoiser.setParameters(m_parameters);
+			denoiser.setProgressCallback([this](float i_progress){ m_progressCallback(i_progress / float(((1 << (2 * m_nbOfScales)) - 1) / 3)); });
 			denoiser.denoise();
 #ifdef SAVE_ADDITIONAL_OUTPUTS
 			{ // TEMPORARY
@@ -91,6 +101,16 @@ namespace bcd
 			denoiser.setInputs(inputsArray[scale]);
 			denoiser.setOutputs(outputsArray[scale]);
 			denoiser.setParameters(m_parameters);
+			denoiser.setProgressCallback([this, scale](float i_progress)
+					{
+						int s = m_nbOfScales - 1 - scale;
+						// next higher definition scale is 4 times slower
+						// 1 + 4 + 4^2 + ... 4^s = (4^(s+1) - 1) / (4 - 1) = (2^(2*(s+1)) - 1) / 3 = ((1 << (2*(s+1))) - 1) / 3
+						float factor = 1.f / float(((1 << (2 * m_nbOfScales)) - 1) / 3);
+						float minValue = factor * float(((1 << (2 * s)) - 1) / 3);
+						float maxValue = factor * float(((1 << (2 * (s + 1))) - 1) / 3);
+						m_progressCallback(minValue + i_progress * (maxValue - minValue));
+					});
 			denoiser.denoise();
 #ifdef SAVE_ADDITIONAL_OUTPUTS
 			{ // TEMPORARY

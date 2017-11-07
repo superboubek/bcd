@@ -22,8 +22,6 @@
 #include "Chronometer.h"
 #include "Utils.h"
 
-#include "io_exr.h"
-
 #include <Eigen/Dense>
 
 #include <iostream>

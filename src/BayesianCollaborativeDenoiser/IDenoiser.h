@@ -9,6 +9,7 @@
 #ifndef I_DENOISER_H
 #define I_DENOISER_H
 
+#include <functional>
 #include <memory>
 
 namespace bcd
@@ -72,7 +73,7 @@ namespace bcd
 	class IDenoiser
 	{
 	public:
-		IDenoiser() = default;
+		IDenoiser() : m_progressCallback([](float){}) {}
 		virtual ~IDenoiser() {}
 
 	public: // public methods
@@ -86,10 +87,13 @@ namespace bcd
 		const DenoiserParameters& getParameters() const { return m_parameters; }
 		void setParameters(const DenoiserParameters& i_rParameters) { m_parameters = i_rParameters; }
 
+		void setProgressCallback(std::function<void(float)> i_progressCallback) { m_progressCallback = i_progressCallback; }
+
 	protected:
 		DenoiserParameters m_parameters;
 		DenoiserInputs m_inputs;
 		DenoiserOutputs m_outputs;
+		std::function<void(float)> m_progressCallback;
 	};
 
 } // namespace bcd
