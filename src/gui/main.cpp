@@ -95,8 +95,10 @@ int tmpTest() {
 void launchGui()
 {
 	nanogui::init();
-	GuiWindow window;
-	window.displayUntilClosed();
+	{
+		nanogui::ref<GuiWindow> window = new GuiWindow();
+		window->displayUntilClosed();
+	}
 	nanogui::shutdown();
 }
 

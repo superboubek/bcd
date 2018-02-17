@@ -33,17 +33,17 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 # OpenMP
 FIND_PACKAGE(OpenMP)
 
-IF(${CMAKE_VERSION} VERSION_GREATER 3.8)
-
-	# not tested yet
-	MESSAGE(AUTHOR_WARNING "Using OpenMP detection from cmake 3.9.0+: not tested yet")
-	IF(OPENMP_CXX_FOUND)
-		ADD_LIBRARY(OpenMP ALIAS OpenMP::OpenMP_CXX)
-	ELSE()
-		MESSAGE(WARNING "Could not find OpenMP library")
-	ENDIF()
-
-ELSE()
+#IF(${CMAKE_VERSION} VERSION_GREATER 3.8)
+#
+#	# not tested yet
+#	MESSAGE(AUTHOR_WARNING "Using OpenMP detection from cmake 3.9.0+: not tested yet")
+#	IF(OPENMP_CXX_FOUND)
+#		ADD_LIBRARY(OpenMP ALIAS OpenMP::OpenMP_CXX)
+#	ELSE()
+#		MESSAGE(WARNING "Could not find OpenMP library")
+#	ENDIF()
+#
+#ELSE()
 
 	IF(OPENMP_FOUND)
 		ADD_LIBRARY(OpenMP INTERFACE)
@@ -57,7 +57,7 @@ ELSE()
 		MESSAGE(WARNING "Could not find OpenMP library")
 	ENDIF()
 
-ENDIF()
+#ENDIF()
 
 
 
