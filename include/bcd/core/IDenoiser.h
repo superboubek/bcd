@@ -24,7 +24,7 @@ namespace bcd
 				m_histogramDistanceThreshold(1.f),
 				m_patchRadius(1), m_searchWindowRadius(6),
 				m_minEigenValue(0.00000001), //0.0001f), // TEMPORARILY CHANGED
-				m_useRandomPixelOrder(false),
+				m_useRandomPixelOrder(true),
 				m_markedPixelsSkippingProbability(1.f),
 				m_nbOfCores(0),
 				m_useCuda(true)

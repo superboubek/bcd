@@ -14,7 +14,7 @@
 # ---------------------------------------------------------------------------------------------------
 
 
-SET(target_name bcd)
+SET(target_name ${lib_bcd_io})
 
 
 # First we check whether optional and required libraries have been found
@@ -47,65 +47,33 @@ endif(required_library_is_missing)
 
 
 
-
+SET(exr_folder "exr")
+SET(bcd_io_include_folder "${bcd_include_folder}/io")
 
 SET(src_files
-	Denoiser.cpp
-	DenoisingUnit.cpp
-	MultiscaleDenoiser.cpp
-	SpikeRemovalFilter.cpp
+	ImageIO.cpp
 	ParametersIO.cpp
-	SamplesAccumulator.cpp
-	${common_folder}/Chronometer.cpp
-	${common_folder}/ImageIO.cpp
-	${common_folder}/Utils.cpp
-	${common_folder}/CovarianceMatrix.cpp
 	${exr_folder}/io_exr.cpp
 )
 SET(header_files
-	IDenoiser.h
-	Denoiser.h
-	DenoisingUnit.h
-	MultiscaleDenoiser.h
-	SpikeRemovalFilter.h
-	ParametersIO.h
-	SamplesAccumulator.h
-	${common_folder}/DeepImage.h
-	${common_folder}/Chronometer.h
-	${common_folder}/ImageIO.h
-	${common_folder}/Utils.h
-	${common_folder}/CovarianceMatrix.h
+	${bcd_io_include_folder}/ImageIO.h
+	${bcd_io_include_folder}/ParametersIO.h
 	${exr_folder}/io_exr.h
 )
 SET(header_implementation_files
-	${common_folder}/DeepImage.hpp
 )
 
-IF(CUDA_FOUND)
-	MESSAGE(STATUS "Using cuda's nvcc for generating ${target_name}")
-	list(APPEND CUDA_NVCC_FLAGS "-arch=sm_20")
-	SET(src_files ${src_files} CudaHistogramDistance.cu)
-	SET(header_files ${header_files} CudaHistogramDistance.h CudaUtils.h)
-	CUDA_ADD_LIBRARY(${target_name} ${src_files} ${header_files} ${header_implementation_files} STATIC)
-	TARGET_COMPILE_DEFINITIONS(${target_name} PRIVATE FOUND_CUDA)
-ELSE(CUDA_FOUND)
-	ADD_LIBRARY(${target_name} STATIC ${src_files} ${header_files} ${header_implementation_files})
-ENDIF(CUDA_FOUND)
+ADD_LIBRARY(${target_name} STATIC ${src_files} ${header_files} ${header_implementation_files})
 
 
-TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC ${common_folder})
+TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${bcd_include_folder}/io")
 TARGET_INCLUDE_DIRECTORIES(${target_name} PRIVATE ${exr_folder})
-TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC ${bcd_folder})
-
 
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
-TARGET_LINK_LIBRARIES(${target_name} PUBLIC OpenMP)
+TARGET_LINK_LIBRARIES(${target_name} PUBLIC ${lib_bcd_core})
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE OpenExr)
-TARGET_LINK_LIBRARIES(${target_name} PRIVATE eigen)
 TARGET_LINK_LIBRARIES(${target_name} PRIVATE Json)
 
 INSTALL(TARGETS ${target_name} ARCHIVE DESTINATION lib)
-
-SET(bcd_library ${target_name} PARENT_SCOPE)
 
