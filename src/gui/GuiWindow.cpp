@@ -154,8 +154,6 @@ GuiWindow::GuiWindow() :
 		m_displayTypeIsVisible[i] = true;
 
 	m_viewFrame.reset(width(), height(), 512, 512);
-
-	cout << "GuiWindow constructed!" << endl;
 }
 
 GuiWindow::~GuiWindow()
@@ -472,15 +470,15 @@ void GuiWindow::buildParametersSubWindow()
 
 
 	// begin of tmp adds to ease testing
-//	inputColorWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test.exr"));
+//	inputColorWidget->setValue(FilePathFormVariable("/your/absolute/path/to/bcd/data/inputs/test.exr"));
 //	inputColorWidget->callback();
-//	inputHistWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_hist.exr"));
+//	inputHistWidget->setValue(FilePathFormVariable("/your/absolute/path/to/bcd/data/inputs/test_hist.exr"));
 //	inputHistWidget->callback();
-//	inputCovWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/inputs/test_cov.exr"));
+//	inputCovWidget->setValue(FilePathFormVariable("/your/absolute/path/to/bcd/data/inputs/test_cov.exr"));
 //	inputCovWidget->callback();
-//	outputFileWidget->setValue(FilePathFormVariable("/data/boughida/projects/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
+//	outputFileWidget->setValue(FilePathFormVariable("/your/absolute/path/to/bcd/data/outputs/tmp/test_BCDfiltered.exr"));
 //	outputFileWidget->callback();
-	loadInputsAndParameters("/data/boughida/projects/bcd/data/inputs/json/test.bcd.json");
+//	loadInputsAndParameters("/your/absolute/path/to/bcd/data/inputs/json/test.bcd.json");
 	// end of tmp adds to ease testing
 
 }
