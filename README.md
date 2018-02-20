@@ -1,5 +1,7 @@
 # BCD - Bayesian Collaborative Denoiser for Monte-Carlo Rendering #
 
+## Overview ##
+
 Reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
 
@@ -10,18 +12,37 @@ Malik Boughida and Tamy Boubekeur
                                                                            
 All rights reserved. 
 
+## Release Notes ##
+
+### v1.1 ###
+* New architecture: 
+	* BCD is now a library, for easy integration in host renders.
+	* A new sample accumulator object helps easily dumping samples during rendering for later extracting BCD inputs and denoising the final image.
+	* Dependency are now managed through git submodules.
+	* The command line tool is still here.
+* Denoising presets can now be saved/loaded in a JSON file.
+* New GUI to load images, configure the BCD denoiser, run it interactively, load and save presets.
+* Various bug fixes.
+* Now properly compiles and runs on Linux and Windows 10, in CPU and GPU mode.
+* Improved CMake.
+
+### v1.0 ##
+Initial version.
+
 ## Building ##
 
-This program uses CMake. It has been tested on Linux. It should work on Windows too, but building on MacOSX could require more efforts.
+This program uses CMake. It has been tested on Linux and Windows 10. Building on MacOS has not been tested but should not cause major problem, at least for the CPU version.
 
-This program has several dependencies that need to be installed first:
+This program has several dependencies that are automatically downloaded through GIT submodules:
 
 Required:
 
 * OpenEXR
 * Eigen
+* JSON
+* zlib
 
-Optional:
+Optional (need to be installed on the host system):
 
 * OpenMP
 * CUDA
