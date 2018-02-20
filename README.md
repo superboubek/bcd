@@ -1,6 +1,6 @@
 # BCD - Bayesian Collaborative Denoiser for Monte-Carlo Rendering #
 
-![](BCD.png)
+![](BCD.jpg)
 
 ## Overview ##
 
