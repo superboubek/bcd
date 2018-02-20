@@ -7,9 +7,9 @@
 BCD allows to denoise images rendered with Monte Carlo path tracing and provided in the form of their samples statistics (average, distribution and covariance of per-pixel color samples). BCD can run in CPU (e.g., renderfarm) or GPU  (e.g., desktop) mode. It can be integrated as a library to any Monte Carlo renderer, using the provided sample accumulator to interface the Monte Carlo simulation with the BCD internals, and comes with a graphics user interface for designing interactively the denoising parameters, which can be saved and later reused in batch in JSON format. 
 
 BCD has been designed for easy integration and low invasiveness in the host renderer, in a high spp context (production rendering). There are at least three ways to integrate BCD in a rendering pipeline, by either:
- * dumping all samples in a raw file, using the raw2bcd tool to generate the rendering statistics from tnhis file and then running the BCD using the CLI tool
- * exporting the mandatory statitics from the rendering loop in EXR format and running the BCD CLI tool to obtain a denoised image.
- * directly integrating the BCD library into the renderer, using the sample accumulator to post samples to BCD during the path tracing and denoising the accumulated value after rendering using the library
+ * dumping all samples in a raw file, using the raw2bcd tool to generate the rendering statistics from this file and then running the BCD using the CLI tool;
+ * exporting the mandatory statistics from the rendering loop in EXR format and running the BCD CLI tool to obtain a denoised image;
+ * directly integrating the BCD library into the renderer, using the sample accumulator to post samples to BCD during the path tracing and denoising the accumulated values after rendering using the library.
 
 Version 1.0 of BCD is the reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
