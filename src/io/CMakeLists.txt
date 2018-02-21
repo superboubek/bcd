@@ -29,7 +29,7 @@ SET(missing_optional_libraries "")
 if (NOT OPENMP_FOUND)
 	SET(optional_library_is_missing TRUE)
 	SET(missing_optional_libraries ${missing_optional_libraries} OpenMP)
-endif(NOT OPENMP_FOUND) 
+endif(NOT OPENMP_FOUND)
 
 if (NOT CUDA_FOUND)
 	SET(optional_library_is_missing TRUE)
@@ -68,6 +68,7 @@ ADD_LIBRARY(${target_name} STATIC ${src_files} ${header_files} ${header_implemen
 
 TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${bcd_include_folder}/io")
 TARGET_INCLUDE_DIRECTORIES(${target_name} PRIVATE ${exr_folder})
+TARGET_INCLUDE_DIRECTORIES(${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/ext/json/include)
 
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)
