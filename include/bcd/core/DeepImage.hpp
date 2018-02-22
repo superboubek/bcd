@@ -1,4 +1,4 @@
-// This file is part of the reference implementation for the paper 
+// This file is part of the reference implementation for the paper
 //   Bayesian Collaborative Denoising for Monte-Carlo Rendering
 //   Malik Boughida and Tamy Boubekeur.
 //   Computer Graphics Forum (Proc. EGSR 2017), vol. 36, no. 4, p. 137-153, 2017
@@ -337,6 +337,7 @@ namespace bcd
 		m_depth = i_tImage.m_depth;
 		m_widthTimesDepth = i_tImage.m_width * i_tImage.m_depth;
 		m_data = std::move(i_tImage.m_data);
+		return *this;
 	}
 
 	template < typename scalar >

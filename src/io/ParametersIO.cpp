@@ -1,4 +1,4 @@
-// This file is part of the reference implementation for the paper 
+// This file is part of the reference implementation for the paper
 //   Bayesian Collaborative Denoising for Monte-Carlo Rendering
 //   Malik Boughida and Tamy Boubekeur.
 //   Computer Graphics Forum (Proc. EGSR 2017), vol. 36, no. 4, p. 137-153, 2017
@@ -10,7 +10,8 @@
 
 #include "Utils.h"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
+
 #include <iostream>
 #include <fstream>
 
