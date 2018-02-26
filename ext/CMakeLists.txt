@@ -11,21 +11,21 @@ ADD_SUBDIRECTORY(eigen)
 SET(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 
-if(POLICY CMP0026)
-	cmake_policy(PUSH)
-	cmake_policy(SET CMP0026 OLD) # to avoid some cmake warnings
-	SET(saved_policy_default_CMP0026 "${CMAKE_POLICY_DEFAULT_CMP0026}")
-	SET(CMAKE_POLICY_DEFAULT_CMP0026 OLD)
-	MESSAGE(STATUS "Policy CMP0026 set to OLD for IlmBase to avoid warnings")
-endif()
+#if(POLICY CMP0026)
+#	cmake_policy(PUSH)
+#	cmake_policy(SET CMP0026 OLD) # to avoid some cmake warnings
+#	SET(saved_policy_default_CMP0026 "${CMAKE_POLICY_DEFAULT_CMP0026}")
+#	SET(CMAKE_POLICY_DEFAULT_CMP0026 OLD)
+#	MESSAGE(STATUS "Policy CMP0026 set to OLD for IlmBase to avoid warnings")
+#endif()
 
 MESSAGE(STATUS "Entering subdirectory 'IlmBase'")
 ADD_SUBDIRECTORY(openexr/IlmBase)
 
-if(POLICY CMP0026)
-	SET(CMAKE_POLICY_DEFAULT_CMP0026 ${saved_policy_default_CMP0026})
-	cmake_policy(POP)
-endif()
+#if(POLICY CMP0026)
+#	SET(CMAKE_POLICY_DEFAULT_CMP0026 ${saved_policy_default_CMP0026})
+#	cmake_policy(POP)
+#endif()
 
 
 

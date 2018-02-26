@@ -68,7 +68,6 @@ ADD_LIBRARY(${target_name} STATIC ${src_files} ${header_files} ${header_implemen
 
 TARGET_INCLUDE_DIRECTORIES(${target_name} PUBLIC "${bcd_include_folder}/io")
 TARGET_INCLUDE_DIRECTORIES(${target_name} PRIVATE ${exr_folder})
-TARGET_INCLUDE_DIRECTORIES(${target_name} PRIVATE ${CMAKE_SOURCE_DIR}/ext/json/include)
 
 
 SET_TARGET_PROPERTIES(${target_name} PROPERTIES CXX_STANDARD 11)

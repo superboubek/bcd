@@ -10,7 +10,7 @@
 
 #include "Utils.h"
 
-#include <nlohmann/json.hpp>
+#include "json.hpp"
 
 #include <iostream>
 #include <fstream>
