@@ -4,7 +4,7 @@
 
 ## Overview ##
 
-BCD allows to denoise images rendered with Monte Carlo path tracing and provided in the form of their samples statistics (average, distribution and covariance of per-pixel color samples). BCD can run in CPU (e.g., renderfarm) or GPU  (e.g., desktop) mode. It can be integrated as a library to any Monte Carlo renderer, using the provided sample accumulator to interface the Monte Carlo simulation with the BCD internals, and comes with a graphics user interface for designing interactively the denoising parameters, which can be saved and later reused in batch in JSON format. 
+BCD allows to denoise images rendered with Monte Carlo path tracing and provided in the form of their samples statistics (average, distribution and covariance of per-pixel color samples). BCD can run in CPU (e.g., renderfarm) or GPU  (e.g., desktop) mode. It can be integrated as a library to any Monte Carlo renderer, using the provided sample accumulator to interface the Monte Carlo simulation with the BCD internals, and comes with a graphics user interface for designing interactively the denoising parameters, which can be saved in JSON format and later reused in batch. 
 
 BCD has been designed for easy integration and low invasiveness in the host renderer, in a high spp context (production rendering). There are at least three ways to integrate BCD in a rendering pipeline, by either:
  * dumping all samples in a raw file, using the raw2bcd tool to generate the rendering statistics from this file and then running the BCD using the CLI tool;
@@ -14,7 +14,7 @@ BCD has been designed for easy integration and low invasiveness in the host rend
 Version 1.0 of BCD is the reference implementation for the paper [Bayesian Collaborative Denoising 
 for Monte-Carlo Rendering](https://www.telecom-paristech.fr/~boubek/papers/BCD) by Malik Boughida and Tamy Boubekeur.
 
-Copyright(C) 2014-2017
+Copyright(C) 2014-2018
 Malik Boughida and Tamy Boubekeur
                                                                            
 All rights reserved. 
@@ -23,15 +23,15 @@ All rights reserved.
 
 ### v1.1 ###
 * New architecture: 
-	* BCD is now a library, for easy integration in host renders.
-	* A new sample accumulator object helps easily dumping samples during rendering for later extracting BCD inputs and denoising the final image.
-	* Dependency are now managed through git submodules.
-	* The command line tool is still here.
+	* BCD is now a library, for easy integration in host renders,
+	* a new sample accumulator object helps easily dumping samples during rendering for later extracting BCD inputs and denoising the final image,
+	* dependency are now managed through git submodules,
+	* the command line tool is still here.
 * Denoising presets can now be saved/loaded in a JSON file.
-* New GUI to load images, configure the BCD denoiser, run it interactively, load and save presets.
+* New GUI to load raw images (color and stats), configure the BCD denoiser, run and configure it interactively, load and save presets which can be reused by the core library (batch denoising, engine-integrated denoising).
 * Various bug fixes.
 * Now properly compiles and runs on Linux and Windows 10, in CPU and GPU mode.
-* Improved CMake.
+* Improved build system (CMake).
 
 ### v1.0 ##
 Initial version.
