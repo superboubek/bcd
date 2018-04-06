@@ -59,7 +59,7 @@ To build on Linux, go to the directory containing this README file, then:
 ```
 $ mkdir build
 $ cd build
-$ cmake ../src
+$ cmake ..
 $ make
 ```
 
