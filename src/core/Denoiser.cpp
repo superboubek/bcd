@@ -109,9 +109,12 @@ namespace bcd
 			cout << "The program has not been built with Cuda" << endl;
 #endif
 
+#ifdef _OPENMP
 		if(m_parameters.m_nbOfCores > 0)
 			omp_set_num_threads(m_parameters.m_nbOfCores);
+#endif
 
+#ifdef _OPENMP
 #pragma omp parallel
 #pragma omp master
 		{
@@ -123,6 +126,12 @@ namespace bcd
 			else
 				cout << "No parallelization using OpenMP" << endl;
 		}
+#else
+        {
+			m_parameters.m_nbOfCores = 1;
+			cout << "No parallelization" << endl;
+        }
+#endif // _OPENMP
 
 		vector<PixelPosition> pixelSet(nbOfPixelsWithoutBorder);
 		{
@@ -169,7 +178,9 @@ namespace bcd
 				denoisingUnit.denoisePatchAndSimilarPatches(mainPatchCenter);
 #pragma omp atomic
 				++nbOfPixelsComputed;
+#ifdef _OPENMP
 				if(omp_get_thread_num() == 0)
+#endif
 				{
 					newPercentage = (nbOfPixelsComputed * 100) / nbOfPixelsWithoutBorder;
 					if(newPercentage != currentPercentage)

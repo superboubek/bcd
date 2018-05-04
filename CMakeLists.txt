@@ -10,8 +10,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8.8)
 
 PROJECT(BayesianCollaborativeDenoising)
 
-OPTION(BCD_BUILD_GUI "Build a GUI executable for bcd, using library NanoGUI" ON)
-OPTION(BCD_USE_CUDA "Use CUDA for accelerating computations" ON)
+OPTION(BCD_BUILD_GUI "Build a GUI executable for bcd, using library NanoGUI" OFF)
+OPTION(BCD_USE_CUDA "Use CUDA for accelerating computations" OFF)
 
 # Add CMake folder to the  module path : contains CMake specific files *.cmake
 SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH} )
