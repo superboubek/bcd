@@ -101,8 +101,13 @@ namespace bcd
 			m_pCovarianceImage(&(i_rDenoiser.getPixelCovarianceImage())),
 
 			m_pNbOfSamplesSqrtImage(&(i_rDenoiser.getNbOfSamplesSqrtImage())),
+#ifdef _OPENMP
 			m_pOutputSummedColorImage(&(i_rDenoiser.getOutputSummedColorImage(omp_get_thread_num()))),
 			m_pEstimatesCountImage(&(i_rDenoiser.getEstimatesCountImage(omp_get_thread_num()))),
+#else
+			m_pOutputSummedColorImage(&(i_rDenoiser.getOutputSummedColorImage(0))),
+			m_pEstimatesCountImage(&(i_rDenoiser.getEstimatesCountImage(0))),
+#endif
 			m_pIsCenterOfAlreadyDenoisedPatchImage(&(i_rDenoiser.getIsCenterOfAlreadyDenoisedPatchImage())),
 
 			m_nbOfBins(i_rDenoiser.getInputs().m_pHistograms->getDepth()),
