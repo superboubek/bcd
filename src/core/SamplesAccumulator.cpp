@@ -9,8 +9,10 @@
 #include "SamplesAccumulator.h"
 #include "CovarianceMatrix.h"
 
+#include <math.h>
 
 #include <cassert>
+#include <iomanip>
 
 using namespace std;
 
